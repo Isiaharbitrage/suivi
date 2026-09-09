@@ -11,31 +11,16 @@
 </head>
 <body>
 
-<!-- Écran de connexion -->
+<!-- Écran de chargement -->
 <div id="auth-screen" class="auth-screen">
-  <div class="auth-card">
-    <div class="auth-mark">
+  <div class="auth-card" style="text-align:center;">
+    <div class="auth-mark" style="justify-content:center; margin: 0 auto 18px;">
       <span class="stripe"></span>
       <span class="stripe"></span>
       <span class="stripe"></span>
     </div>
     <h1>Suivi d'arbitrage</h1>
-    <p class="auth-sub">Tes matchs, tes analyses, tes observations — au même endroit, sur tous tes appareils.</p>
-
-    <form id="auth-form" class="auth-form">
-      <label>
-        <span>Adresse e-mail</span>
-        <input type="email" id="auth-email" required autocomplete="email">
-      </label>
-      <label>
-        <span>Mot de passe</span>
-        <input type="password" id="auth-password" required autocomplete="current-password" minlength="6">
-      </label>
-      <p id="auth-error" class="auth-error" hidden></p>
-      <button type="submit" id="auth-submit" class="btn btn-primary btn-block">Se connecter</button>
-    </form>
-    <button id="auth-toggle" class="auth-toggle">Pas encore de compte ? <span>Créer un compte</span></button>
-    <p class="auth-hint" id="auth-hint" hidden>Configure d'abord tes clés Firebase dans <code>js/firebase-config.js</code> — voir le README.</p>
+    <p class="auth-sub" id="loading-text">Connexion en cours…</p>
   </div>
 </div>
 
@@ -61,10 +46,7 @@
       </button>
     </nav>
     <div class="sidebar-bottom">
-      <div class="user-chip">
-        <span id="user-email">—</span>
-      </div>
-      <button id="logout-btn" class="btn-text">Se déconnecter</button>
+      <div class="user-chip" style="opacity:.6;">Données synchronisées</div>
     </div>
   </aside>
 

@@ -1,8 +1,8 @@
-import { firebaseConfig } from './firebase-config.js';
+import { firebaseConfig, autoAuth } from './firebase-config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, signOut
+  createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
@@ -13,10 +13,6 @@ import {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("COLLE_TA_CLE")) {
-  document.getElementById('auth-hint').hidden = false;
-}
 
 /* ---------------- State ---------------- */
 let currentUser = null;
@@ -29,57 +25,27 @@ let currentView = 'dashboard';
 const NIVEAUX = ["Départemental", "Régional", "Pré-national", "National", "Autre"];
 const ROLES = ["1er arbitre", "2e arbitre", "3e arbitre", "Table de marque"];
 
-/* ---------------- Auth screen ---------------- */
+/* ---------------- Connexion automatique en arrière-plan ---------------- */
 const authScreen = document.getElementById('auth-screen');
 const appRoot = document.getElementById('app');
-const authForm = document.getElementById('auth-form');
-const authError = document.getElementById('auth-error');
-const authSubmit = document.getElementById('auth-submit');
-const authToggle = document.getElementById('auth-toggle');
-let authMode = 'signin';
+const loadingText = document.getElementById('loading-text');
 
-authToggle.addEventListener('click', () => {
-  authMode = authMode === 'signin' ? 'signup' : 'signin';
-  authSubmit.textContent = authMode === 'signin' ? 'Se connecter' : 'Créer mon compte';
-  authToggle.innerHTML = authMode === 'signin'
-    ? `Pas encore de compte ? <span>Créer un compte</span>`
-    : `Déjà un compte ? <span>Se connecter</span>`;
-  authError.hidden = true;
-});
-
-authForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  authError.hidden = true;
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
-  authSubmit.disabled = true;
+async function autoSignIn() {
   try {
-    if (authMode === 'signin') {
-      await signInWithEmailAndPassword(auth, email, password);
-    } else {
-      await createUserWithEmailAndPassword(auth, email, password);
-    }
+    await signInWithEmailAndPassword(auth, autoAuth.email, autoAuth.password);
   } catch (err) {
-    authError.textContent = friendlyAuthError(err.code);
-    authError.hidden = false;
-  } finally {
-    authSubmit.disabled = false;
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+      try {
+        await createUserWithEmailAndPassword(auth, autoAuth.email, autoAuth.password);
+      } catch (err2) {
+        loadingText.textContent = "Erreur de connexion : " + err2.message;
+      }
+    } else {
+      loadingText.textContent = "Erreur de connexion : " + err.message;
+    }
   }
-});
-
-function friendlyAuthError(code) {
-  const map = {
-    'auth/invalid-email': "Adresse e-mail invalide.",
-    'auth/user-not-found': "Aucun compte avec cet e-mail.",
-    'auth/wrong-password': "Mot de passe incorrect.",
-    'auth/invalid-credential': "E-mail ou mot de passe incorrect.",
-    'auth/email-already-in-use': "Un compte existe déjà avec cet e-mail.",
-    'auth/weak-password': "Le mot de passe doit faire au moins 6 caractères.",
-  };
-  return map[code] || "Une erreur est survenue. Réessaie.";
 }
-
-document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+autoSignIn();
 
 /* ---------------- Auth state → data subscriptions ---------------- */
 onAuthStateChanged(auth, (user) => {
@@ -87,7 +53,6 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     authScreen.hidden = true;
     appRoot.hidden = false;
-    document.getElementById('user-email').textContent = user.email;
     subscribeData(user.uid);
   } else {
     authScreen.hidden = false;

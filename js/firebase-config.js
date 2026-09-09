@@ -12,3 +12,11 @@ export const firebaseConfig = {
   appId: "1:117029983354:web:7d21c5cafd74574bea57c3",
   measurementId: "G-ZC9EDD9K86"
 };
+
+// Identifiants utilisés en interne pour connecter automatiquement le site
+// à Firebase, sans écran de connexion visible. Ils n'ont pas besoin d'être
+// mémorisés : le site les utilise lui-même, à chaque ouverture.
+export const autoAuth = {
+  email: "site-arbitrage@example.com",
+  password: "Bxk92Trq!84vLmZ7"
+};
