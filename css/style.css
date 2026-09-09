@@ -245,6 +245,9 @@ input, select, textarea{ font-family: inherit; }
 }
 .pbp-detail-stack{ display:flex; flex-direction:column; gap:4px; min-width: 110px; }
 .pbp-dash{ color: var(--text-faint); padding-left:4px; }
+.pbp-clip-cell{ display:flex; align-items:center; gap:4px; min-width: 130px; }
+.pbp-clip-cell input{ min-width: 0; }
+.pbp-clip-link{ text-decoration:none; font-size:13px; flex-shrink:0; }
 
 /* Appreciation badges */
 .appr-badge{ font-family: var(--font-display); font-size:12px; padding:3px 12px; border-radius:999px; border:1px solid var(--border); }

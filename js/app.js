@@ -22,6 +22,7 @@ let unsubMatches = null;
 let unsubObs = null;
 let currentView = 'dashboard';
 let playByPlayMatchId = null;
+let pbpReturnView = 'matches';
 let pbpRows = [];
 let pbpSaveTimer = null;
 
@@ -91,9 +92,8 @@ function subscribeData(uid) {
 /* ---------------- Nav ---------------- */
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
     currentView = btn.dataset.view;
+    setActiveNav(currentView);
     renderView();
   });
 });
@@ -108,15 +108,17 @@ function renderView() {
   if (!currentUser) return;
   if (currentView === 'dashboard') renderDashboard();
   else if (currentView === 'matches') renderMatches();
+  else if (currentView === 'playbyplaylist') renderPlayByPlayList();
   else if (currentView === 'observations') renderObservations();
-  // La vue 'playbyplay' n'est jamais re-rendue automatiquement : elle utilise
-  // un état local (pbpRows) pour ne pas perdre la saisie en cours pendant l'édition.
+  else if (currentView === 'stats') renderStats();
+  // La vue 'playbyplay' (édition d'une fiche) n'est jamais re-rendue automatiquement :
+  // elle utilise un état local (pbpRows) pour ne pas perdre la saisie en cours.
 }
 
 /* ---------------- Utils communs ---------------- */
 function emptyPlayByPlayRows(n = PBP_ROW_COUNT) {
   return Array.from({ length: n }, () => ({
-    cds: '', timing: '', bonTiming: '', nature: '',
+    clip: '', cds: '', timing: '', bonTiming: '', nature: '',
     violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '',
     iotMeca: ''
   }));
@@ -134,25 +136,40 @@ function computePbpStats(rows) {
   return { fautesSifflees, bons, mauvais, pctBons, pctBonTiming, totalTimings: timingsRenseignes.length };
 }
 
+function pbpDetailText(row) {
+  if (row.nature === 'Violation') return `Violation${row.violationType ? ' — ' + row.violationType : ''}`;
+  if (row.nature === 'Faute') {
+    let s = 'Faute';
+    if (row.fauteType) s += ' ' + row.fauteType;
+    if (row.fauteType === 'OFF' && row.fauteOffType) s += ' — ' + row.fauteOffType;
+    if (row.fauteType === 'DEF') {
+      if (row.fauteDefAos) s += ' ' + row.fauteDefAos;
+      if (row.fauteDefType) s += ' — ' + row.fauteDefType;
+    }
+    return s;
+  }
+  return '';
+}
+
+function hasAnyData(row) {
+  return !!(row.clip || row.cds || row.timing || row.nature || row.iotMeca);
+}
+
 /* ---------------- Dashboard ---------------- */
 function renderDashboard() {
-  setActiveNav('dashboard');
   const total = matches.length;
   const notes = matches.filter(m => m.note != null).map(m => Number(m.note));
   const avg = notes.length ? (notes.reduce((a, b) => a + b, 0) / notes.length) : null;
   const lastMatch = matches[0];
-  const niveauCounts = {};
-  matches.forEach(m => { niveauCounts[m.niveau] = (niveauCounts[m.niveau] || 0) + 1; });
-  const topNiveau = Object.entries(niveauCounts).sort((a, b) => b[1] - a[1])[0];
 
   const apprCounts = { Performant: 0, Satisfaisant: 0, Insuffisant: 0 };
   observations.forEach(o => { if (apprCounts[o.appreciation] != null) apprCounts[o.appreciation]++; });
   const preds = observations.filter(o => o.predictionNote != null).map(o => Number(o.predictionNote));
   const predAvg = preds.length ? (preds.reduce((a, b) => a + b, 0) / preds.length) : null;
 
-  let allPbpRows = [];
-  matches.forEach(m => (m.playByPlay || []).forEach(r => allPbpRows.push(r)));
-  const pbpStats = computePbpStats(allPbpRows);
+  const travailItems = lastMatch
+    ? [lastMatch.pointTravail1, lastMatch.pointTravail2, lastMatch.pointTravail3].filter(Boolean)
+    : [];
 
   viewRoot.innerHTML = `
     <div class="view-header">
@@ -162,7 +179,7 @@ function renderDashboard() {
       </div>
     </div>
 
-    <div class="stat-grid">
+    <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr);">
       <div class="stat-card">
         <div class="stat-label">Matchs arbitrés</div>
         <div class="stat-value">${total}</div>
@@ -178,28 +195,23 @@ function renderDashboard() {
         <div class="stat-value" style="font-size:20px">${lastMatch ? formatDate(lastMatch.date) : '—'}</div>
         <div class="stat-sub">${lastMatch ? `${lastMatch.equipeA} – ${lastMatch.equipeB}` : "à venir"}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Niveau le plus fréquent</div>
-        <div class="stat-value" style="font-size:20px">${topNiveau ? topNiveau[0] : '—'}</div>
-        <div class="stat-sub">${topNiveau ? `${topNiveau[1]} match(s)` : ""}</div>
-      </div>
     </div>
 
     <div class="panel">
-      <div class="panel-title">Évolution de ta note</div>
+      <div class="panel-title">Évolution de ton auto-évaluation</div>
       ${renderChart(matches)}
     </div>
 
     <div class="panel">
-      <div class="panel-title">Coups de sifflet — vue d'ensemble de la saison</div>
-      ${allPbpRows.length ? `
-        <div class="stat-grid" style="margin-bottom:0;">
-          <div class="stat-card"><div class="stat-label">Fautes sifflées</div><div class="stat-value">${pbpStats.fautesSifflees}</div></div>
-          <div class="stat-card"><div class="stat-label">Bons coups (CC/CNC)</div><div class="stat-value">${pbpStats.bons}</div></div>
-          <div class="stat-card"><div class="stat-label">Mauvais coups (IC/INC/MC)</div><div class="stat-value">${pbpStats.mauvais}</div></div>
-          <div class="stat-card"><div class="stat-label">% bon timing</div><div class="stat-value">${pbpStats.pctBonTiming != null ? pbpStats.pctBonTiming + '%' : '—'}</div></div>
-        </div>
-      ` : `<p class="obs-text">Remplis une analyse play-by-play sur au moins un match pour voir ces statistiques.</p>`}
+      <div class="panel-title">Pistes de travail — dernier match rempli</div>
+      ${lastMatch
+        ? (travailItems.length
+            ? `<p class="obs-text" style="margin-bottom:8px;">${escapeHtml(lastMatch.equipeA)} – ${escapeHtml(lastMatch.equipeB)} · ${formatDate(lastMatch.date)}</p>
+               <ul style="margin:0; padding-left:18px; color:var(--text-muted); font-size:13.5px; line-height:1.8;">
+                 ${travailItems.map(t => `<li>${escapeHtml(t)}</li>`).join('')}
+               </ul>`
+            : `<p class="obs-text">Aucun point à travailler renseigné sur ton dernier match.</p>`)
+        : `<p class="obs-text">Ajoute un match pour voir apparaître tes pistes de travail ici.</p>`}
     </div>
 
     <div class="panel">
@@ -241,7 +253,6 @@ function renderChart(matchList) {
 
 /* ---------------- Matches view ---------------- */
 function renderMatches() {
-  setActiveNav('matches');
   viewRoot.innerHTML = `
     <div class="view-header">
       <div>
@@ -285,7 +296,7 @@ function openMatchForm(existing) {
       <div class="form-grid">
         <div class="form-field"><label>Date</label><input type="date" name="date" required value="${m.date || ''}"></div>
         <div class="form-field"><label>Niveau</label>
-          <select name="niveau">${NIVEAUX.map(n => `<option ${m.niveau === n ? 'selected' : ''}>${n}</option>`).join('')}</select>
+          <select name="niveau" id="niveau-select">${NIVEAUX.map(n => `<option ${m.niveau === n ? 'selected' : ''}>${n}</option>`).join('')}</select>
         </div>
         <div class="form-field"><label>Équipe A</label><input type="text" name="equipeA" required value="${m.equipeA || ''}"></div>
         <div class="form-field"><label>Équipe B</label><input type="text" name="equipeB" required value="${m.equipeB || ''}"></div>
@@ -300,6 +311,11 @@ function openMatchForm(existing) {
             <input type="range" min="0" max="20" step="0.5" name="note" value="${m.note ?? 10}" id="note-range">
             <span class="range-value" id="note-range-value">${m.note ?? 10}</span>
           </div>
+        </div>
+
+        <div class="form-field"><label>Collègue</label><input type="text" name="collegue1" placeholder="Nom de l'arbitre" value="${m.collegue1 || ''}"></div>
+        <div class="form-field" id="collegue2-field" ${m.niveau === 'LBWL' ? '' : 'style="display:none"'}>
+          <label>Collègue 2</label><input type="text" name="collegue2" placeholder="Nom de l'arbitre" value="${m.collegue2 || ''}">
         </div>
 
         <div class="form-field full"><label>Point fort n°1</label><input type="text" name="pointFort1" value="${m.pointFort1 || ''}"></div>
@@ -329,8 +345,13 @@ function openMatchForm(existing) {
   rangeEl.addEventListener('input', () => document.getElementById('note-range-value').textContent = rangeEl.value);
   document.getElementById('cancel-btn').addEventListener('click', closeModal);
 
+  const niveauSelect = document.getElementById('niveau-select');
+  niveauSelect.addEventListener('change', () => {
+    document.getElementById('collegue2-field').style.display = niveauSelect.value === 'LBWL' ? '' : 'none';
+  });
+
   const pbpBtn = document.getElementById('open-pbp-btn');
-  if (pbpBtn) pbpBtn.addEventListener('click', () => { closeModal(); openPlayByPlay(existing.id); });
+  if (pbpBtn) pbpBtn.addEventListener('click', () => { closeModal(); openPlayByPlay(existing.id, 'matches'); });
 
   const delBtn = document.getElementById('delete-match-btn');
   if (delBtn) delBtn.addEventListener('click', async () => {
@@ -342,15 +363,18 @@ function openMatchForm(existing) {
   document.getElementById('match-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
+    const niveau = fd.get('niveau');
     const data = {
       date: fd.get('date'),
-      niveau: fd.get('niveau'),
+      niveau,
       equipeA: fd.get('equipeA').trim(),
       equipeB: fd.get('equipeB').trim(),
       scoreA: fd.get('scoreA') ? Number(fd.get('scoreA')) : null,
       scoreB: fd.get('scoreB') ? Number(fd.get('scoreB')) : null,
       role: fd.get('role'),
       note: Number(fd.get('note')),
+      collegue1: (fd.get('collegue1') || '').trim(),
+      collegue2: niveau === 'LBWL' ? (fd.get('collegue2') || '').trim() : '',
       pointFort1: fd.get('pointFort1').trim(),
       pointFort2: fd.get('pointFort2').trim(),
       pointFort3: fd.get('pointFort3').trim(),
@@ -375,16 +399,48 @@ function openMatchForm(existing) {
   });
 }
 
-/* ---------------- Play-by-play view ---------------- */
-function openPlayByPlay(matchId) {
+/* ---------------- Liste play-by-play ---------------- */
+function renderPlayByPlayList() {
+  viewRoot.innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2 class="view-title">Analyse play-by-play</h2>
+        <p class="view-sub">Clique sur un match pour ouvrir sa fiche d'analyse.</p>
+      </div>
+    </div>
+    <div class="panel" style="padding:6px 16px;">
+      ${matches.length ? matches.map(pbpListRowHtml).join('') : emptyState("Aucun match pour l'instant", "Ajoute un match dans l'onglet « Mes matchs » pour pouvoir l'analyser ici.")}
+    </div>
+  `;
+  document.querySelectorAll('.match-row').forEach(row => {
+    row.addEventListener('click', () => openPlayByPlay(row.dataset.id, 'playbyplaylist'));
+  });
+}
+
+function pbpListRowHtml(m) {
+  const rows = m.playByPlay || [];
+  const filledCount = rows.filter(hasAnyData).length;
+  return `
+    <div class="match-row" data-id="${m.id}" style="grid-template-columns: 84px 1fr 120px 28px;">
+      <div class="match-date">${formatDate(m.date)}</div>
+      <div class="match-teams">${escapeHtml(m.equipeA)} – ${escapeHtml(m.equipeB)}<span class="lvl">${escapeHtml(m.niveau || '')}</span></div>
+      <div class="match-score" style="font-size:12.5px; color: var(--text-muted);">${filledCount > 0 ? `${filledCount} action(s)` : 'Vide'}</div>
+      <div class="chev">›</div>
+    </div>
+  `;
+}
+
+/* ---------------- Play-by-play (édition d'une fiche) ---------------- */
+function openPlayByPlay(matchId, returnView) {
   const m = matches.find(x => x.id === matchId);
   if (!m) return;
   playByPlayMatchId = matchId;
+  pbpReturnView = returnView || 'matches';
   pbpRows = (m.playByPlay && m.playByPlay.length ? m.playByPlay : emptyPlayByPlayRows()).map(r => ({
-    cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', iotMeca: '', ...r
+    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', iotMeca: '', ...r
   }));
   currentView = 'playbyplay';
-  setActiveNav('matches');
+  setActiveNav(pbpReturnView);
   renderPlayByPlayView();
 }
 
@@ -414,8 +470,11 @@ function pbpRowHtml(row, i) {
     ? selHtml(i, 'bonTiming', ['Oui', 'Non'], row.bonTiming, 'Bon timing ?')
     : `<span class="pbp-dash">—</span>`;
 
+  const clipLink = row.clip ? `<a href="${escapeAttr(row.clip)}" target="_blank" rel="noopener" class="pbp-clip-link" title="Ouvrir le clip">🔗</a>` : '';
+
   return `
     <tr id="pbp-row-${i}">
+      <td><div class="pbp-clip-cell"><input type="text" data-i="${i}" data-f="clip" value="${escapeAttr(row.clip)}" placeholder="Lien Drive…">${clipLink}</div></td>
       <td class="pbp-num">${i + 1}</td>
       <td>${selHtml(i, 'cds', CDS_OPTIONS, row.cds, 'CDS')}</td>
       <td>${selHtml(i, 'timing', TIMING_OPTIONS, row.timing, 'Timing')}</td>
@@ -445,7 +504,7 @@ function updatePbpStatsBar() {
 
 function renderPlayByPlayView() {
   const m = matches.find(x => x.id === playByPlayMatchId);
-  if (!m) { currentView = 'matches'; renderMatches(); return; }
+  if (!m) { currentView = pbpReturnView; renderView(); return; }
 
   viewRoot.innerHTML = `
     <div class="view-header">
@@ -453,8 +512,9 @@ function renderPlayByPlayView() {
         <h2 class="view-title">Analyse play-by-play</h2>
         <p class="view-sub">${escapeHtml(m.equipeA)} – ${escapeHtml(m.equipeB)} · ${formatDate(m.date)}</p>
       </div>
-      <div style="display:flex; gap:10px;">
-        <button class="btn btn-ghost" id="pbp-back-btn">← Retour aux matchs</button>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-ghost" id="pbp-back-btn">← Retour</button>
+        <button class="btn btn-ghost" id="pbp-pdf-btn">⬇ Télécharger en PDF</button>
         <button class="btn btn-primary" id="pbp-save-btn">Enregistrer</button>
       </div>
     </div>
@@ -462,15 +522,21 @@ function renderPlayByPlayView() {
     <div class="panel" style="overflow-x:auto;">
       <table class="pbp-table">
         <thead>
-          <tr><th>#</th><th>CDS</th><th>Timing</th><th>Bon timing</th><th>Nature</th><th>Détail</th><th>IOT / MECA</th></tr>
+          <tr><th>Clip</th><th>#</th><th>CDS</th><th>Timing</th><th>Bon timing</th><th>Nature</th><th>Détail</th><th>IOT / MECA</th></tr>
         </thead>
         <tbody id="pbp-tbody">${pbpRows.map((r, i) => pbpRowHtml(r, i)).join('')}</tbody>
       </table>
     </div>
   `;
 
-  document.getElementById('pbp-back-btn').addEventListener('click', () => { currentView = 'matches'; renderMatches(); });
+  document.getElementById('pbp-back-btn').addEventListener('click', () => {
+    savePlayByPlay(false);
+    currentView = pbpReturnView;
+    setActiveNav(pbpReturnView);
+    renderView();
+  });
   document.getElementById('pbp-save-btn').addEventListener('click', () => savePlayByPlay(true));
+  document.getElementById('pbp-pdf-btn').addEventListener('click', () => exportPbpPdf(m, pbpRows));
 
   const tbody = document.getElementById('pbp-tbody');
   tbody.addEventListener('change', (e) => {
@@ -511,9 +577,40 @@ async function savePlayByPlay(manual) {
   }
 }
 
+function exportPbpPdf(match, rows) {
+  if (!window.jspdf) { alert("Le générateur de PDF n'a pas pu se charger. Vérifie ta connexion internet et réessaie."); return; }
+  const { jsPDF } = window.jspdf;
+  const docPdf = new jsPDF();
+  const s = computePbpStats(rows);
+
+  docPdf.setFontSize(14);
+  docPdf.text(`Analyse play-by-play — ${match.equipeA} vs ${match.equipeB}`, 14, 16);
+  docPdf.setFontSize(10);
+  docPdf.text(`${formatDate(match.date)}  ·  Niveau : ${match.niveau || '—'}  ·  Rôle : ${match.role || '—'}`, 14, 23);
+  docPdf.text(`Fautes sifflées : ${s.fautesSifflees}   |   Bons coups (CC/CNC) : ${s.bons}   |   Mauvais coups (IC/INC/MC) : ${s.mauvais}`, 14, 30);
+  docPdf.text(`Ratio bons/mauvais : ${s.pctBons != null ? s.pctBons + '%' : '—'}   |   % bon timing : ${s.pctBonTiming != null ? s.pctBonTiming + '%' : '—'} (${s.totalTimings} jugé(s))`, 14, 36);
+
+  const filled = rows
+    .map((r, idx) => ({ ...r, num: idx + 1 }))
+    .filter(hasAnyData);
+
+  const body = filled.map(r => [r.num, r.clip || '', r.cds || '', r.timing || '', r.bonTiming || '', r.nature || '', pbpDetailText(r), r.iotMeca || '']);
+
+  docPdf.autoTable({
+    startY: 42,
+    head: [['#', 'Clip', 'CDS', 'Timing', 'Bon timing', 'Nature', 'Détail', 'IOT / MECA']],
+    body,
+    styles: { fontSize: 8, cellWidth: 'wrap' },
+    columnStyles: { 1: { cellWidth: 40 }, 6: { cellWidth: 32 } },
+    headStyles: { fillColor: [232, 96, 12] }
+  });
+
+  const fileName = `playbyplay_${match.equipeA}_${match.equipeB}_${match.date}.pdf`.replace(/\s+/g, '_');
+  docPdf.save(fileName);
+}
+
 /* ---------------- Observations view ---------------- */
 function renderObservations() {
-  setActiveNav('observations');
   const apprCounts = { Performant: 0, Satisfaisant: 0, Insuffisant: 0 };
   observations.forEach(o => { if (apprCounts[o.appreciation] != null) apprCounts[o.appreciation]++; });
   const preds = observations.filter(o => o.predictionNote != null).map(o => Number(o.predictionNote));
@@ -642,6 +739,61 @@ function openObsForm(existing) {
       alert("Erreur lors de l'enregistrement : " + err.message);
     }
   });
+}
+
+/* ---------------- Statistiques view ---------------- */
+function renderStats() {
+  const totalMatches = matches.length;
+
+  const clubSet = new Set();
+  matches.forEach(m => {
+    if (m.equipeA) clubSet.add(m.equipeA.trim());
+    if (m.equipeB) clubSet.add(m.equipeB.trim());
+  });
+
+  const collegueSet = new Set();
+  matches.forEach(m => {
+    if (m.collegue1) collegueSet.add(m.collegue1.trim());
+    if (m.collegue2) collegueSet.add(m.collegue2.trim());
+  });
+
+  let allPbpRows = [];
+  matches.forEach(m => (m.playByPlay || []).forEach(r => allPbpRows.push(r)));
+  const pbpStats = computePbpStats(allPbpRows);
+
+  const ccCount = matches.filter(m => m.role === 'CC').length;
+  const a2Count = matches.filter(m => m.role === 'Arbitre 2').length;
+  const pctCC = totalMatches ? Math.round((ccCount / totalMatches) * 100) : null;
+  const pctA2 = totalMatches ? Math.round((a2Count / totalMatches) * 100) : null;
+
+  viewRoot.innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2 class="view-title">Statistiques</h2>
+        <p class="view-sub">Vue globale, agrégée sur toute la saison.</p>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Matchs arbitrés</div><div class="stat-value">${totalMatches}</div></div>
+      <div class="stat-card"><div class="stat-label">Clubs arbitrés</div><div class="stat-value">${clubSet.size}</div></div>
+      <div class="stat-card"><div class="stat-label">Collègues différents</div><div class="stat-value">${collegueSet.size}</div></div>
+      <div class="stat-card"><div class="stat-label">% en tant que CC</div><div class="stat-value">${pctCC != null ? pctCC + '%' : '—'}</div><div class="stat-sub">${pctA2 != null ? `${pctA2}% Arbitre 2` : ''}</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Coups de sifflet — toutes les fiches play-by-play</div>
+      ${allPbpRows.length ? `
+        <div class="stat-grid" style="margin-bottom:0;">
+          <div class="stat-card"><div class="stat-label">Fautes sifflées</div><div class="stat-value">${pbpStats.fautesSifflees}</div></div>
+          <div class="stat-card"><div class="stat-label">Bons coups (CC/CNC)</div><div class="stat-value" style="color:var(--positive)">${pbpStats.bons}</div></div>
+          <div class="stat-card"><div class="stat-label">Mauvais coups (IC/INC/MC)</div><div class="stat-value" style="color:#ff8f8f">${pbpStats.mauvais}</div></div>
+          <div class="stat-card"><div class="stat-label">Ratio bons / mauvais</div><div class="stat-value">${pbpStats.pctBons != null ? pbpStats.pctBons + '%' : '—'}</div></div>
+          <div class="stat-card"><div class="stat-label">% bon timing</div><div class="stat-value">${pbpStats.pctBonTiming != null ? pbpStats.pctBonTiming + '%' : '—'}</div><div class="stat-sub">${pbpStats.totalTimings} coup(s) jugé(s)</div></div>
+        </div>
+      ` : `<p class="obs-text">Remplis une analyse play-by-play sur au moins un match pour voir ces statistiques.</p>`}
+    </div>
+  `;
 }
 
 /* ---------------- Modal / toast helpers ---------------- */
