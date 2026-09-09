@@ -17,7 +17,7 @@
   --font-display: 'Oswald', sans-serif;
   --font-body: 'Work Sans', sans-serif;
 }
-
+[hidden]{ display: none !important; }
 *{ box-sizing: border-box; }
 html,body{ height:100%; }
 body{
