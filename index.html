@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi d'arbitrage — Basketball</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Écran de connexion -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-mark">
+      <span class="stripe"></span>
+      <span class="stripe"></span>
+      <span class="stripe"></span>
+    </div>
+    <h1>Suivi d'arbitrage</h1>
+    <p class="auth-sub">Tes matchs, tes analyses, tes observations — au même endroit, sur tous tes appareils.</p>
+
+    <form id="auth-form" class="auth-form">
+      <label>
+        <span>Adresse e-mail</span>
+        <input type="email" id="auth-email" required autocomplete="email">
+      </label>
+      <label>
+        <span>Mot de passe</span>
+        <input type="password" id="auth-password" required autocomplete="current-password" minlength="6">
+      </label>
+      <p id="auth-error" class="auth-error" hidden></p>
+      <button type="submit" id="auth-submit" class="btn btn-primary btn-block">Se connecter</button>
+    </form>
+    <button id="auth-toggle" class="auth-toggle">Pas encore de compte ? <span>Créer un compte</span></button>
+    <p class="auth-hint" id="auth-hint" hidden>Configure d'abord tes clés Firebase dans <code>js/firebase-config.js</code> — voir le README.</p>
+  </div>
+</div>
+
+<!-- Application -->
+<div id="app" class="app" hidden>
+
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">
+        <span class="stripe"></span><span class="stripe"></span><span class="stripe"></span>
+        <span class="brand-name">Arbitrage</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard">
+        <span class="nav-num">01</span> Tableau de bord
+      </button>
+      <button class="nav-item" data-view="matches">
+        <span class="nav-num">02</span> Mes matchs
+      </button>
+      <button class="nav-item" data-view="observations">
+        <span class="nav-num">03</span> Observations
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-chip">
+        <span id="user-email">—</span>
+      </div>
+      <button id="logout-btn" class="btn-text">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="view-root"></div>
+  </main>
+
+</div>
+
+<!-- Modale générique -->
+<div id="modal-backdrop" class="modal-backdrop" hidden>
+  <div id="modal" class="modal"></div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
