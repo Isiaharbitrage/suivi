@@ -229,6 +229,29 @@ input, select, textarea{ font-family: inherit; }
 .chart-wrap{ width:100%; }
 .chart-caption{ display:flex; justify-content:space-between; font-size:11.5px; color: var(--text-faint); margin-top:8px; }
 
+/* Play-by-play table */
+.pbp-table{ width:100%; border-collapse: collapse; font-size:12.5px; min-width: 860px; }
+.pbp-table th{
+  text-align:left; font-family: var(--font-display); font-weight:500; font-size:11px;
+  text-transform:uppercase; letter-spacing:0.4px; color: var(--text-faint);
+  padding: 8px 8px; border-bottom:1px solid var(--border); position: sticky; top:0; background: var(--bg-elevated);
+}
+.pbp-table td{ padding: 4px 6px; border-bottom:1px solid var(--border); vertical-align: middle; }
+.pbp-table tr:hover td{ background: var(--bg-elevated-2); }
+.pbp-num{ color: var(--text-faint); font-family: var(--font-display); text-align:center; width:28px; }
+.pbp-table select, .pbp-table input[type=text]{
+  background: var(--bg); border:1px solid var(--border); border-radius:4px;
+  padding: 5px 6px; color: var(--text); font-size:12px; width:100%; min-width: 74px;
+}
+.pbp-detail-stack{ display:flex; flex-direction:column; gap:4px; min-width: 110px; }
+.pbp-dash{ color: var(--text-faint); padding-left:4px; }
+
+/* Appreciation badges */
+.appr-badge{ font-family: var(--font-display); font-size:12px; padding:3px 12px; border-radius:999px; border:1px solid var(--border); }
+.appr-performant{ color: var(--positive); background: var(--positive-soft); border-color: rgba(76,175,125,0.3); }
+.appr-satisfaisant{ color: var(--warning); background: var(--warning-soft); border-color: rgba(228,185,78,0.3); }
+.appr-insuffisant{ color: #ff8f8f; background: rgba(255,90,90,0.12); border-color: rgba(255,90,90,0.3); }
+
 /* Responsive */
 @media (max-width: 880px){
   .app{ flex-direction:column; }
