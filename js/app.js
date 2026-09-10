@@ -330,6 +330,8 @@ function openObjectifsForm(category) {
     }
   });
 }
+
+function renderChart(matchList) {
   const pts = matchList
     .filter(m => m.note != null)
     .slice()
