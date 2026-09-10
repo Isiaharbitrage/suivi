@@ -18,8 +18,10 @@ const db = getFirestore(app);
 let currentUser = null;
 let matches = [];
 let observations = [];
+let finances = [];
 let unsubMatches = null;
 let unsubObs = null;
+let unsubFinances = null;
 let currentView = 'dashboard';
 let playByPlayMatchId = null;
 let pbpReturnView = 'matches';
@@ -38,6 +40,8 @@ const FAUTE_DEF_AOS = ["AOS", "nAOS"];
 const FAUTE_DEF_TYPES = ["OBS", "POU", "HEAD", "HOLD", "CYL", "UIM"];
 const APPRECIATIONS = ["Performant", "Satisfaisant", "Insuffisant"];
 const PBP_ROW_COUNT = 60;
+const FINANCE_CATEGORIES = ["NM1", "LBWL", "CDF", "MA"];
+const FINANCE_RECAP_ORDER = ["NM1", "LBWL", "MA", "CDF"];
 
 /* ---------------- Connexion automatique en arrière-plan ---------------- */
 const authScreen = document.getElementById('auth-screen');
@@ -72,7 +76,8 @@ onAuthStateChanged(auth, (user) => {
     appRoot.hidden = true;
     if (unsubMatches) unsubMatches();
     if (unsubObs) unsubObs();
-    matches = []; observations = [];
+    if (unsubFinances) unsubFinances();
+    matches = []; observations = []; finances = [];
   }
 });
 
@@ -85,6 +90,11 @@ function subscribeData(uid) {
   const obsQ = query(collection(db, 'users', uid, 'observations'), orderBy('date', 'desc'));
   unsubObs = onSnapshot(obsQ, (snap) => {
     observations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderView();
+  });
+  const financesQ = query(collection(db, 'users', uid, 'finances'), orderBy('date', 'desc'));
+  unsubFinances = onSnapshot(financesQ, (snap) => {
+    finances = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderView();
   });
 }
@@ -111,6 +121,7 @@ function renderView() {
   else if (currentView === 'playbyplaylist') renderPlayByPlayList();
   else if (currentView === 'observations') renderObservations();
   else if (currentView === 'stats') renderStats();
+  else if (currentView === 'finance') renderFinance();
   // La vue 'playbyplay' (édition d'une fiche) n'est jamais re-rendue automatiquement :
   // elle utilise un état local (pbpRows) pour ne pas perdre la saisie en cours.
 }
@@ -794,6 +805,133 @@ function renderStats() {
       ` : `<p class="obs-text">Remplis une analyse play-by-play sur au moins un match pour voir ces statistiques.</p>`}
     </div>
   `;
+}
+
+/* ---------------- Finance view ---------------- */
+function eur(n) {
+  return (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function renderFinance() {
+  const ca = finances.reduce((sum, f) => sum + (Number(f.indemnites) || 0), 0);
+  const charges = finances.reduce((sum, f) => sum + (Number(f.charges) || 0), 0);
+  const benefice = ca - charges;
+  const distanceTotale = finances.reduce((sum, f) => sum + (Number(f.distanceKm) || 0), 0);
+  const total = finances.length;
+
+  const recapRows = FINANCE_RECAP_ORDER.map(cat => {
+    const count = finances.filter(f => f.categorie === cat).length;
+    const pct = total ? Math.round((count / total) * 100) : 0;
+    return `<tr><td>${cat}</td><td>${count}</td><td>${pct}%</td></tr>`;
+  }).join('');
+
+  viewRoot.innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2 class="view-title">Finance</h2>
+        <p class="view-sub">Suivi financier de ta saison.</p>
+      </div>
+      <button class="btn btn-primary" id="add-finance-btn">Ajouter une fiche</button>
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-value" style="font-size:24px">${eur(ca)}</div><div class="stat-sub">somme des indemnités</div></div>
+      <div class="stat-card"><div class="stat-label">Bénéfice</div><div class="stat-value" style="font-size:24px; color:${benefice >= 0 ? 'var(--positive)' : '#ff8f8f'}">${eur(benefice)}</div><div class="stat-sub">chiffre d'affaires - charges</div></div>
+      <div class="stat-card"><div class="stat-label">Distance totale</div><div class="stat-value" style="font-size:24px">${distanceTotale.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}<span style="font-size:14px;color:var(--text-faint)"> km</span></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Répartition par catégorie</div>
+      ${total ? `
+        <table class="recap-table">
+          <thead><tr><th>Catégorie</th><th>Nombre de matchs</th><th>% du total</th></tr></thead>
+          <tbody>${recapRows}</tbody>
+        </table>
+      ` : `<p class="obs-text">Ajoute une fiche pour voir apparaître la répartition par catégorie.</p>`}
+    </div>
+
+    <div class="panel" style="padding:6px 16px;">
+      ${finances.length ? finances.map(financeRowHtml).join('') : emptyState("Aucune fiche pour l'instant", "Ajoute ta première fiche match pour démarrer le suivi financier.")}
+    </div>
+  `;
+  document.getElementById('add-finance-btn').addEventListener('click', () => openFinanceForm());
+  document.querySelectorAll('.finance-row').forEach(row => {
+    row.addEventListener('click', () => openFinanceForm(finances.find(f => f.id === row.dataset.id)));
+  });
+}
+
+function financeRowHtml(f) {
+  const net = (Number(f.indemnites) || 0) - (Number(f.charges) || 0);
+  return `
+    <div class="match-row finance-row" data-id="${f.id}" style="grid-template-columns: 84px 1fr 90px 70px 28px;">
+      <div class="match-date">${formatDate(f.date)}</div>
+      <div class="match-teams">${escapeHtml(f.lieu || '—')}<span class="lvl">${escapeHtml(f.categorie || '')} · ${(Number(f.distanceKm) || 0)} km</span></div>
+      <div class="match-score">${eur(f.indemnites)}</div>
+      <div class="badge-note" style="color:${net >= 0 ? 'var(--positive)' : '#ff8f8f'}">${net >= 0 ? '+' : ''}${net.toFixed(0)}€</div>
+      <div class="chev">›</div>
+    </div>
+  `;
+}
+
+function openFinanceForm(existing) {
+  const f = existing || {};
+  const html = `
+    <h3 class="modal-title">${existing ? 'Modifier la fiche' : 'Ajouter une fiche'}</h3>
+    <p class="modal-sub">Renseigne les informations financières de ce match.</p>
+    <form id="finance-form">
+      <div class="form-grid">
+        <div class="form-field"><label>Date</label><input type="date" name="date" required value="${f.date || ''}"></div>
+        <div class="form-field"><label>Lieu</label><input type="text" name="lieu" value="${f.lieu || ''}"></div>
+        <div class="form-field"><label>Catégorie</label>
+          <select name="categorie">${FINANCE_CATEGORIES.map(c => `<option ${f.categorie === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        </div>
+        <div class="form-field"><label>Distance (km)</label><input type="number" min="0" step="0.1" name="distanceKm" value="${f.distanceKm ?? ''}"></div>
+        <div class="form-field"><label>Indemnités (€)</label><input type="number" min="0" step="0.01" name="indemnites" value="${f.indemnites ?? ''}"></div>
+        <div class="form-field"><label>Charges (€)</label><input type="number" min="0" step="0.01" name="charges" value="${f.charges ?? ''}"></div>
+      </div>
+      <div class="modal-actions">
+        <div>${existing ? `<button type="button" class="btn btn-ghost btn-danger" id="delete-finance-btn">Supprimer</button>` : ''}</div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn btn-ghost" id="cancel-btn">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  `;
+  openModal(html);
+  document.getElementById('cancel-btn').addEventListener('click', closeModal);
+  const delBtn = document.getElementById('delete-finance-btn');
+  if (delBtn) delBtn.addEventListener('click', async () => {
+    if (confirm("Supprimer cette fiche ?")) {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'finances', existing.id));
+      closeModal(); showToast('Fiche supprimée.');
+    }
+  });
+  document.getElementById('finance-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = {
+      date: fd.get('date'),
+      lieu: fd.get('lieu').trim(),
+      categorie: fd.get('categorie'),
+      distanceKm: fd.get('distanceKm') ? Number(fd.get('distanceKm')) : 0,
+      indemnites: fd.get('indemnites') ? Number(fd.get('indemnites')) : 0,
+      charges: fd.get('charges') ? Number(fd.get('charges')) : 0,
+    };
+    try {
+      if (existing) {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'finances', existing.id), data);
+        showToast('Fiche mise à jour.');
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'users', currentUser.uid, 'finances'), data);
+        showToast('Fiche ajoutée.');
+      }
+      closeModal();
+    } catch (err) {
+      alert("Erreur lors de l'enregistrement : " + err.message);
+    }
+  });
 }
 
 /* ---------------- Modal / toast helpers ---------------- */
