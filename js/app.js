@@ -5,7 +5,7 @@ import {
   createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
   onSnapshot, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -19,9 +19,11 @@ let currentUser = null;
 let matches = [];
 let observations = [];
 let finances = [];
+let objectifs = { moyenne: ['', '', '', '', ''], resultat: ['', '', '', '', ''] };
 let unsubMatches = null;
 let unsubObs = null;
 let unsubFinances = null;
+let unsubObjectifs = null;
 let currentView = 'dashboard';
 let playByPlayMatchId = null;
 let pbpReturnView = 'matches';
@@ -77,7 +79,9 @@ onAuthStateChanged(auth, (user) => {
     if (unsubMatches) unsubMatches();
     if (unsubObs) unsubObs();
     if (unsubFinances) unsubFinances();
+    if (unsubObjectifs) unsubObjectifs();
     matches = []; observations = []; finances = [];
+    objectifs = { moyenne: ['', '', '', '', ''], resultat: ['', '', '', '', ''] };
   }
 });
 
@@ -95,6 +99,17 @@ function subscribeData(uid) {
   const financesQ = query(collection(db, 'users', uid, 'finances'), orderBy('date', 'desc'));
   unsubFinances = onSnapshot(financesQ, (snap) => {
     finances = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderView();
+  });
+  const objectifsRef = doc(db, 'users', uid, 'settings', 'objectifs');
+  unsubObjectifs = onSnapshot(objectifsRef, (snap) => {
+    if (snap.exists()) {
+      const d = snap.data();
+      objectifs = {
+        moyenne: (d.moyenne && d.moyenne.length === 5) ? d.moyenne : ['', '', '', '', ''],
+        resultat: (d.resultat && d.resultat.length === 5) ? d.resultat : ['', '', '', '', '']
+      };
+    }
     renderView();
   });
 }
@@ -195,6 +210,24 @@ function renderDashboard() {
       </div>
     </div>
 
+    <div class="panel">
+      <div class="panel-title">Objectifs annuels</div>
+      <div style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span class="obs-section-label" style="margin:0;">Objectif de moyenne</span>
+          <button class="btn-text" data-obj-cat="moyenne">Modifier</button>
+        </div>
+        <div class="obj-row" data-obj-cat="moyenne">${objectifsBoxesHtml('moyenne')}</div>
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span class="obs-section-label" style="margin:0;">Objectif de résultat annuel</span>
+          <button class="btn-text" data-obj-cat="resultat">Modifier</button>
+        </div>
+        <div class="obj-row" data-obj-cat="resultat">${objectifsBoxesHtml('resultat')}</div>
+      </div>
+    </div>
+
     <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr);">
       <div class="stat-card">
         <div class="stat-label">Matchs arbitrés</div>
@@ -253,9 +286,50 @@ function renderDashboard() {
       </div>
     </div>
   `;
+  document.querySelectorAll('[data-obj-cat]').forEach(el => {
+    el.addEventListener('click', () => openObjectifsForm(el.dataset.objCat));
+  });
 }
 
-function renderChart(matchList) {
+function objectifsBoxesHtml(category) {
+  const arr = objectifs[category];
+  return arr.map((v, i) => `<div class="obj-box ${v ? 'filled' : ''}">${v ? escapeHtml(v) : `+ Objectif ${i + 1}`}</div>`).join('');
+}
+
+function openObjectifsForm(category) {
+  const arr = objectifs[category];
+  const label = category === 'moyenne' ? 'Objectif de moyenne' : 'Objectif de résultat annuel';
+  const html = `
+    <h3 class="modal-title">${label}</h3>
+    <p class="modal-sub">Jusqu'à 5 objectifs pour la saison.</p>
+    <form id="objectifs-form">
+      <div class="form-grid">
+        ${arr.map((v, i) => `<div class="form-field full"><label>Objectif ${i + 1}</label><input type="text" name="obj${i}" value="${escapeAttr(v)}"></div>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <div></div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn btn-ghost" id="cancel-btn">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  `;
+  openModal(html);
+  document.getElementById('cancel-btn').addEventListener('click', closeModal);
+  document.getElementById('objectifs-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const newArr = arr.map((_, i) => (fd.get('obj' + i) || '').trim());
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'objectifs'), { ...objectifs, [category]: newArr }, { merge: true });
+      showToast('Objectifs enregistrés.');
+      closeModal();
+    } catch (err) {
+      alert("Erreur lors de l'enregistrement : " + err.message);
+    }
+  });
+}
   const pts = matchList
     .filter(m => m.note != null)
     .slice()
