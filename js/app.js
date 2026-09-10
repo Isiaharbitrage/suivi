@@ -182,6 +182,10 @@ function renderDashboard() {
     ? [lastMatch.pointTravail1, lastMatch.pointTravail2, lastMatch.pointTravail3].filter(Boolean)
     : [];
 
+  const ca = finances.reduce((sum, f) => sum + (Number(f.indemnites) || 0), 0);
+  const chargesTotal = finances.reduce((sum, f) => sum + (Number(f.charges) || 0), 0);
+  const benefice = ca - chargesTotal;
+
   viewRoot.innerHTML = `
     <div class="view-header">
       <div>
@@ -205,6 +209,19 @@ function renderDashboard() {
         <div class="stat-label">Dernier match</div>
         <div class="stat-value" style="font-size:20px">${lastMatch ? formatDate(lastMatch.date) : '—'}</div>
         <div class="stat-sub">${lastMatch ? `${lastMatch.equipeA} – ${lastMatch.equipeB}` : "à venir"}</div>
+      </div>
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns: repeat(2, 1fr);">
+      <div class="stat-card">
+        <div class="stat-label">Chiffre d'affaires</div>
+        <div class="stat-value" style="font-size:24px">${eur(ca)}</div>
+        <div class="stat-sub">cette saison</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Bénéfice</div>
+        <div class="stat-value" style="font-size:24px; color:${benefice >= 0 ? 'var(--positive)' : '#ff8f8f'}">${eur(benefice)}</div>
+        <div class="stat-sub">chiffre d'affaires - charges</div>
       </div>
     </div>
 
@@ -485,7 +502,7 @@ function pbpRowHtml(row, i) {
 
   return `
     <tr id="pbp-row-${i}">
-      <td><div class="pbp-clip-cell"><input type="text" data-i="${i}" data-f="clip" value="${escapeAttr(row.clip)}" placeholder="Lien Drive…">${clipLink}</div></td>
+      <td><div class="pbp-clip-cell"><input type="text" data-i="${i}" data-f="clip" value="${escapeAttr(row.clip)}" placeholder="Clip…">${clipLink}</div></td>
       <td class="pbp-num">${i + 1}</td>
       <td>${selHtml(i, 'cds', CDS_OPTIONS, row.cds, 'CDS')}</td>
       <td>${selHtml(i, 'timing', TIMING_OPTIONS, row.timing, 'Timing')}</td>
@@ -831,7 +848,10 @@ function renderFinance() {
         <h2 class="view-title">Finance</h2>
         <p class="view-sub">Suivi financier de ta saison.</p>
       </div>
-      <button class="btn btn-primary" id="add-finance-btn">Ajouter une fiche</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost" id="monthly-revenue-btn">📅 Revenu mensuel</button>
+        <button class="btn btn-primary" id="add-finance-btn">Ajouter une fiche</button>
+      </div>
     </div>
 
     <div class="stat-grid" style="grid-template-columns: repeat(3, 1fr);">
@@ -855,6 +875,7 @@ function renderFinance() {
     </div>
   `;
   document.getElementById('add-finance-btn').addEventListener('click', () => openFinanceForm());
+  document.getElementById('monthly-revenue-btn').addEventListener('click', () => openMonthlyRevenueModal());
   document.querySelectorAll('.finance-row').forEach(row => {
     row.addEventListener('click', () => openFinanceForm(finances.find(f => f.id === row.dataset.id)));
   });
@@ -871,6 +892,45 @@ function financeRowHtml(f) {
       <div class="chev">›</div>
     </div>
   `;
+}
+
+function monthlyRevenueTableHtml() {
+  const byMonth = {};
+  finances.forEach(f => {
+    if (!f.date) return;
+    const key = f.date.slice(0, 7);
+    if (!byMonth[key]) byMonth[key] = { ca: 0, charges: 0, count: 0 };
+    byMonth[key].ca += Number(f.indemnites) || 0;
+    byMonth[key].charges += Number(f.charges) || 0;
+    byMonth[key].count += 1;
+  });
+  const months = Object.keys(byMonth).sort().reverse();
+  if (!months.length) return `<p class="obs-text">Aucune fiche enregistrée pour l'instant.</p>`;
+  const rows = months.map(key => {
+    const d = byMonth[key];
+    const ben = d.ca - d.charges;
+    const label = new Date(key + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    return `<tr><td style="text-transform:capitalize">${label}</td><td>${d.count}</td><td>${eur(d.ca)}</td><td>${eur(d.charges)}</td><td style="color:${ben >= 0 ? 'var(--positive)' : '#ff8f8f'}">${eur(ben)}</td></tr>`;
+  }).join('');
+  return `
+    <table class="recap-table">
+      <thead><tr><th>Mois</th><th>Matchs</th><th>Chiffre d'affaires</th><th>Charges</th><th>Bénéfice</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function openMonthlyRevenueModal() {
+  const html = `
+    <h3 class="modal-title">Revenu mensuel</h3>
+    <p class="modal-sub">Chiffre d'affaires et bénéfice, mois par mois.</p>
+    ${monthlyRevenueTableHtml()}
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <div class="modal-actions-right"><button type="button" class="btn btn-primary" id="close-monthly-btn">Fermer</button></div>
+    </div>
+  `;
+  openModal(html);
+  document.getElementById('close-monthly-btn').addEventListener('click', closeModal);
 }
 
 function openFinanceForm(existing) {
