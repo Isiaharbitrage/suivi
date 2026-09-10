@@ -34,10 +34,10 @@ const CDS_OPTIONS = ["CC", "IC", "INC", "CNC", "MC", "NA"];
 const TIMING_OPTIONS = ["QW", "PW", "CW", "IW"];
 const NATURE_OPTIONS = ["Violation", "Faute"];
 const VIOLATION_TYPES = ["REZ", "V-OUT", "V-MAR", "DRI", "E2", "LF", "AUTRE"];
-const FAUTE_OFF_DEF = ["OFF", "DEF"];
-const FAUTE_OFF_TYPES = ["ECR", "POU", "CHA-B", "CHA-S", "HEAD", "HOLD", "CROCH"];
+const FAUTE_OFF_DEF = ["OFF", "DEF", "REB"];
+const FAUTE_OFF_TYPES = ["ECR", "POU", "CHA-B", "CHA-S", "HEAD", "HOLD", "CROCH", "FL", "SIMU"];
 const FAUTE_DEF_AOS = ["AOS", "nAOS"];
-const FAUTE_DEF_TYPES = ["OBS", "POU", "HEAD", "HOLD", "CYL", "UIM"];
+const FAUTE_DEF_TYPES = ["OBS", "POU", "HEAD", "HOLD", "CYL", "UIM", "HB", "DI"];
 const APPRECIATIONS = ["Performant", "Satisfaisant", "Insuffisant"];
 const PBP_ROW_COUNT = 60;
 const FINANCE_CATEGORIES = ["NM1", "LBWL", "CDF", "MA"];
@@ -119,6 +119,7 @@ function renderView() {
   if (currentView === 'dashboard') renderDashboard();
   else if (currentView === 'matches') renderMatches();
   else if (currentView === 'playbyplaylist') renderPlayByPlayList();
+  else if (currentView === 'statanalytique') renderStatAnalytique();
   else if (currentView === 'observations') renderObservations();
   else if (currentView === 'stats') renderStats();
   else if (currentView === 'finance') renderFinance();
@@ -635,6 +636,73 @@ function exportPbpPdf(match, rows) {
 
   const fileName = `playbyplay_${match.equipeA}_${match.equipeB}_${match.date}.pdf`.replace(/\s+/g, '_');
   docPdf.save(fileName);
+}
+
+/* ---------------- Statistique analytique ---------------- */
+function pctBonneFor(rows, predicate) {
+  const matching = rows.filter(predicate);
+  const cc = matching.filter(r => r.cds === 'CC').length;
+  const ic = matching.filter(r => r.cds === 'IC').length;
+  const denom = cc + ic;
+  return denom ? Math.round((cc / denom) * 100) : null;
+}
+
+function statCardPct(label, pct, sub) {
+  return `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value">${pct != null ? pct + '%' : '—'}</div>${sub ? `<div class="stat-sub">${sub}</div>` : ''}</div>`;
+}
+
+function renderStatAnalytique() {
+  let allPbpRows = [];
+  matches.forEach(m => (m.playByPlay || []).forEach(r => allPbpRows.push(r)));
+  const s = computePbpStats(allPbpRows);
+
+  const matchsAnalyses = matches.filter(m => (m.playByPlay || []).some(hasAnyData)).length;
+  const fautesParMatch = matchsAnalyses ? (s.fautesSifflees / matchsAnalyses).toFixed(1) : null;
+
+  const pctDEF = pctBonneFor(allPbpRows, r => r.fauteType === 'DEF');
+  const pctOFF = pctBonneFor(allPbpRows, r => r.fauteType === 'OFF');
+  const pctAOS = pctBonneFor(allPbpRows, r => r.fauteDefAos === 'AOS');
+  const pctECR = pctBonneFor(allPbpRows, r => r.fauteOffType === 'ECR');
+  const pctREB = pctBonneFor(allPbpRows, r => r.fauteType === 'REB');
+  const pctHB = pctBonneFor(allPbpRows, r => r.fauteDefType === 'HB');
+  const pctFL = pctBonneFor(allPbpRows, r => r.fauteOffType === 'FL');
+  const pctDI = pctBonneFor(allPbpRows, r => r.fauteDefType === 'DI');
+  const pctSIMU = pctBonneFor(allPbpRows, r => r.fauteOffType === 'SIMU');
+
+  viewRoot.innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2 class="view-title">Statistique analytique</h2>
+        <p class="view-sub">Analyse détaillée, agrégée sur toutes tes fiches play-by-play.</p>
+      </div>
+    </div>
+
+    ${allPbpRows.length ? `
+      <div class="panel">
+        <div class="panel-title">Vue générale</div>
+        <div class="stat-grid" style="margin-bottom:0;">
+          <div class="stat-card"><div class="stat-label">Fautes sifflées / match</div><div class="stat-value">${fautesParMatch != null ? fautesParMatch : '—'}</div><div class="stat-sub">moyenne sur ${matchsAnalyses} match(s) analysé(s)</div></div>
+          ${statCardPct('Bon coup de sifflet', s.pctBons)}
+          ${statCardPct('Bon timing de CDS', s.pctBonTiming, `${s.totalTimings} coup(s) jugé(s)`)}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Justesse par type de faute</div>
+        <div class="stat-grid" style="margin-bottom:0;">
+          ${statCardPct('Bonne faute DEF', pctDEF)}
+          ${statCardPct('Bonne faute OFF', pctOFF)}
+          ${statCardPct('Bonne faute AOS', pctAOS)}
+          ${statCardPct('Bonne faute ECR', pctECR)}
+          ${statCardPct('Bonne faute REB', pctREB)}
+          ${statCardPct('Bonne faute HB', pctHB)}
+          ${statCardPct('Bonne FL', pctFL)}
+          ${statCardPct('Bonne DI', pctDI)}
+          ${statCardPct('Bonne SIMU', pctSIMU)}
+        </div>
+      </div>
+    ` : `<div class="panel">${emptyState("Pas encore de données", "Remplis une analyse play-by-play sur au moins un match pour voir apparaître ces statistiques.")}</div>`}
+  `;
 }
 
 /* ---------------- Observations view ---------------- */
