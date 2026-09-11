@@ -254,6 +254,9 @@ input, select, textarea{ font-family: inherit; }
 .recap-table td{ padding:9px 10px; border-bottom:1px solid var(--border); color: var(--text-muted); }
 .recap-table tr:last-child td{ border-bottom:none; }
 
+.obj-frame{
+  border: 1.5px solid #f2f4f8; border-radius: var(--radius); padding: 16px 18px;
+}
 .obj-row{ display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; }
 .obj-box{
   background: var(--bg); border:1px dashed var(--border); border-radius: var(--radius);

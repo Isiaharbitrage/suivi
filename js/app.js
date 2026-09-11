@@ -212,16 +212,16 @@ function renderDashboard() {
 
     <div class="panel">
       <div class="panel-title">Objectifs annuels</div>
-      <div style="margin-bottom:20px;">
+      <div class="obj-frame" style="margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <span class="obs-section-label" style="margin:0;">Objectif de moyenne</span>
+          <span class="obs-section-label" style="margin:0;">Objectifs de moyen</span>
           <button class="btn-text" data-obj-cat="moyenne">Modifier</button>
         </div>
         <div class="obj-row" data-obj-cat="moyenne">${objectifsBoxesHtml('moyenne')}</div>
       </div>
-      <div>
+      <div class="obj-frame">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <span class="obs-section-label" style="margin:0;">Objectif de résultat annuel</span>
+          <span class="obs-section-label" style="margin:0;">Objectifs de résultat</span>
           <button class="btn-text" data-obj-cat="resultat">Modifier</button>
         </div>
         <div class="obj-row" data-obj-cat="resultat">${objectifsBoxesHtml('resultat')}</div>
@@ -298,7 +298,7 @@ function objectifsBoxesHtml(category) {
 
 function openObjectifsForm(category) {
   const arr = objectifs[category];
-  const label = category === 'moyenne' ? 'Objectif de moyenne' : 'Objectif de résultat annuel';
+  const label = category === 'moyenne' ? 'Objectifs de moyen' : 'Objectifs de résultat';
   const html = `
     <h3 class="modal-title">${label}</h3>
     <p class="modal-sub">Jusqu'à 5 objectifs pour la saison.</p>
