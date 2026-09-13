@@ -32,7 +32,7 @@ let pbpSaveTimer = null;
 
 const NIVEAUX = ["NM1", "LBWL"];
 const ROLES = ["CC", "Arbitre 2"];
-const CDS_OPTIONS = ["CC", "IC", "INC", "CNC", "MC", "NA"];
+const CDS_OPTIONS = ["CC", "IC", "INC", "CNC", "MC", "G-CT-CJ"];
 const TIMING_OPTIONS = ["QW", "PW", "CW", "IW"];
 const NATURE_OPTIONS = ["Violation", "Faute"];
 const VIOLATION_TYPES = ["REZ", "V-OUT", "V-MAR", "DRI", "E2", "LF", "AUTRE"];
@@ -147,7 +147,7 @@ function emptyPlayByPlayRows(n = PBP_ROW_COUNT) {
   return Array.from({ length: n }, () => ({
     clip: '', cds: '', timing: '', bonTiming: '', nature: '',
     violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '',
-    iotMeca: ''
+    gctcj: '', iotMeca: ''
   }));
 }
 
@@ -164,6 +164,7 @@ function computePbpStats(rows) {
 }
 
 function pbpDetailText(row) {
+  if (row.cds === 'G-CT-CJ') return `G-CT-CJ${row.gctcj ? ' — ' + row.gctcj : ''}`;
   if (row.nature === 'Violation') return `Violation${row.violationType ? ' — ' + row.violationType : ''}`;
   if (row.nature === 'Faute') {
     let s = 'Faute';
@@ -542,7 +543,7 @@ function openPlayByPlay(matchId, returnView) {
   playByPlayMatchId = matchId;
   pbpReturnView = returnView || 'matches';
   pbpRows = (m.playByPlay && m.playByPlay.length ? m.playByPlay : emptyPlayByPlayRows()).map(r => ({
-    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', iotMeca: '', ...r
+    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', gctcj: '', iotMeca: '', ...r
   }));
   currentView = 'playbyplay';
   setActiveNav(pbpReturnView);
@@ -555,7 +556,9 @@ function selHtml(rowIndex, field, options, value, placeholder) {
 
 function pbpRowHtml(row, i) {
   let detail = '';
-  if (row.nature === 'Violation') {
+  if (row.cds === 'G-CT-CJ') {
+    detail = selHtml(i, 'gctcj', ['GOOD', 'BAD'], row.gctcj, 'Good / Bad');
+  } else if (row.nature === 'Violation') {
     detail = selHtml(i, 'violationType', VIOLATION_TYPES, row.violationType, 'Type');
   } else if (row.nature === 'Faute') {
     detail = selHtml(i, 'fauteType', FAUTE_OFF_DEF, row.fauteType, 'OFF / DEF');
@@ -653,6 +656,7 @@ function renderPlayByPlayView() {
     if (f === 'fauteType') { pbpRows[i].fauteOffType = ''; pbpRows[i].fauteDefAos = ''; pbpRows[i].fauteDefType = ''; }
     if (f === 'fauteDefAos') { pbpRows[i].fauteDefType = ''; }
     if (f === 'timing') { pbpRows[i].bonTiming = ''; }
+    if (f === 'cds' && el.value !== 'G-CT-CJ') { pbpRows[i].gctcj = ''; }
     const rowEl = document.getElementById(`pbp-row-${i}`);
     if (rowEl) rowEl.outerHTML = pbpRowHtml(pbpRows[i], i);
     updatePbpStatsBar();
@@ -734,6 +738,8 @@ function renderStatAnalytique() {
 
   const matchsAnalyses = matches.filter(m => (m.playByPlay || []).some(hasAnyData)).length;
   const fautesParMatch = matchsAnalyses ? (s.fautesSifflees / matchsAnalyses).toFixed(1) : null;
+  const mcCount = allPbpRows.filter(r => r.cds === 'MC').length;
+  const mcParMatch = matchsAnalyses ? (mcCount / matchsAnalyses).toFixed(1) : null;
 
   const pctDEF = pctBonneFor(allPbpRows, r => r.fauteType === 'DEF');
   const pctOFF = pctBonneFor(allPbpRows, r => r.fauteType === 'OFF');
@@ -744,6 +750,10 @@ function renderStatAnalytique() {
   const pctFL = pctBonneFor(allPbpRows, r => r.fauteOffType === 'FL');
   const pctDI = pctBonneFor(allPbpRows, r => r.fauteDefType === 'DI');
   const pctSIMU = pctBonneFor(allPbpRows, r => r.fauteOffType === 'SIMU');
+
+  const totalGCT = allPbpRows.filter(r => r.cds === 'G-CT-CJ' && r.gctcj).length;
+  const goodGCT = allPbpRows.filter(r => r.cds === 'G-CT-CJ' && r.gctcj === 'GOOD').length;
+  const pctGCTGood = totalGCT ? Math.round((goodGCT / totalGCT) * 100) : null;
 
   viewRoot.innerHTML = `
     <div class="view-header">
@@ -758,8 +768,10 @@ function renderStatAnalytique() {
         <div class="panel-title">Vue générale</div>
         <div class="stat-grid" style="margin-bottom:0;">
           <div class="stat-card"><div class="stat-label">Fautes sifflées / match</div><div class="stat-value">${fautesParMatch != null ? fautesParMatch : '—'}</div><div class="stat-sub">moyenne sur ${matchsAnalyses} match(s) analysé(s)</div></div>
+          <div class="stat-card"><div class="stat-label">MC / match</div><div class="stat-value">${mcParMatch != null ? mcParMatch : '—'}</div><div class="stat-sub">moyenne sur ${matchsAnalyses} match(s) analysé(s)</div></div>
           ${statCardPct('Bon coup de sifflet', s.pctBons)}
           ${statCardPct('Bon timing de CDS', s.pctBonTiming, `${s.totalTimings} coup(s) jugé(s)`)}
+          ${statCardPct('G-CT-CJ GOOD', pctGCTGood, `${totalGCT} G-CT-CJ jugé(s)`)}
         </div>
       </div>
 
