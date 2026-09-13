@@ -30,7 +30,7 @@ let pbpReturnView = 'matches';
 let pbpRows = [];
 let pbpSaveTimer = null;
 
-const NIVEAUX = ["NM1", "LBWL"];
+const NIVEAUX = ["NM1", "LBWL", "CDF"];
 const ROLES = ["CC", "Arbitre 2"];
 const CDS_OPTIONS = ["CC", "IC", "INC", "CNC", "MC", "G-CT-CJ"];
 const TIMING_OPTIONS = ["QW", "PW", "CW", "IW"];
@@ -420,7 +420,7 @@ function openMatchForm(existing) {
         </div>
 
         <div class="form-field"><label>Collègue</label><input type="text" name="collegue1" placeholder="Nom de l'arbitre" value="${m.collegue1 || ''}"></div>
-        <div class="form-field" id="collegue2-field" ${m.niveau === 'LBWL' ? '' : 'style="display:none"'}>
+        <div class="form-field" id="collegue2-field" ${(m.niveau === 'LBWL' || m.niveau === 'CDF') ? '' : 'style="display:none"'}>
           <label>Collègue 2</label><input type="text" name="collegue2" placeholder="Nom de l'arbitre" value="${m.collegue2 || ''}">
         </div>
 
@@ -453,7 +453,7 @@ function openMatchForm(existing) {
 
   const niveauSelect = document.getElementById('niveau-select');
   niveauSelect.addEventListener('change', () => {
-    document.getElementById('collegue2-field').style.display = niveauSelect.value === 'LBWL' ? '' : 'none';
+    document.getElementById('collegue2-field').style.display = (niveauSelect.value === 'LBWL' || niveauSelect.value === 'CDF') ? '' : 'none';
   });
 
   const pbpBtn = document.getElementById('open-pbp-btn');
@@ -480,7 +480,7 @@ function openMatchForm(existing) {
       role: fd.get('role'),
       note: Number(fd.get('note')),
       collegue1: (fd.get('collegue1') || '').trim(),
-      collegue2: niveau === 'LBWL' ? (fd.get('collegue2') || '').trim() : '',
+      collegue2: (niveau === 'LBWL' || niveau === 'CDF') ? (fd.get('collegue2') || '').trim() : '',
       pointFort1: fd.get('pointFort1').trim(),
       pointFort2: fd.get('pointFort2').trim(),
       pointFort3: fd.get('pointFort3').trim(),
