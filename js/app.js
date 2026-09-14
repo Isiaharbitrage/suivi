@@ -32,14 +32,16 @@ let pbpSaveTimer = null;
 
 const NIVEAUX = ["NM1", "LBWL", "CDF"];
 const ROLES = ["CC", "Arbitre 2"];
-const CDS_OPTIONS = ["CC", "IC", "INC", "CNC", "MC", "G-CT-CJ"];
+const CDS_OPTIONS = ["CC", "IC", "INC", "CNC", "MC", "MEC", "G-CT-CJ"];
 const TIMING_OPTIONS = ["QW", "PW", "CW", "IW"];
 const NATURE_OPTIONS = ["Violation", "Faute"];
 const VIOLATION_TYPES = ["REZ", "V-OUT", "V-MAR", "DRI", "E2", "LF", "AUTRE"];
 const FAUTE_OFF_DEF = ["OFF", "DEF", "REB"];
 const FAUTE_OFF_TYPES = ["ECR", "POU", "CHA-B", "CHA-S", "HEAD", "HOLD", "CROCH", "FL", "SIMU"];
 const FAUTE_DEF_AOS = ["AOS", "nAOS"];
-const FAUTE_DEF_TYPES = ["OBS", "POU", "HEAD", "HOLD", "CYL", "UIM", "HB", "DI"];
+const FAUTE_DEF_TYPES = ["OBS", "POU", "HEAD", "HOLD", "CYL", "UIM", "HB", "DI", "FL"];
+const INC_TYPES = ["R1", "R2"];
+const MEC_TYPES = ["AK", "AT"];
 const APPRECIATIONS = ["Performant", "Satisfaisant", "Insuffisant"];
 const PBP_ROW_COUNT = 60;
 const FINANCE_CATEGORIES = ["NM1", "LBWL", "CDF", "MA"];
@@ -147,7 +149,7 @@ function emptyPlayByPlayRows(n = PBP_ROW_COUNT) {
   return Array.from({ length: n }, () => ({
     clip: '', cds: '', timing: '', bonTiming: '', nature: '',
     violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '',
-    gctcj: '', iotMeca: ''
+    gctcj: '', incType: '', mecType: '', iotMeca: ''
   }));
 }
 
@@ -160,11 +162,17 @@ function computePbpStats(rows) {
   const timingsRenseignes = rows.filter(r => r.timing && r.bonTiming);
   const bonsTimings = timingsRenseignes.filter(r => r.bonTiming === 'Oui').length;
   const pctBonTiming = timingsRenseignes.length ? Math.round((bonsTimings / timingsRenseignes.length) * 100) : null;
-  return { fautesSifflees, bons, mauvais, pctBons, pctBonTiming, totalTimings: timingsRenseignes.length };
+  const cwRows = rows.filter(r => r.timing === 'CW' && r.bonTiming);
+  const bonsCW = cwRows.filter(r => r.bonTiming === 'Oui').length;
+  const mauvaisCW = cwRows.filter(r => r.bonTiming === 'Non').length;
+  const pctBonCW = cwRows.length ? Math.round((bonsCW / cwRows.length) * 100) : null;
+  return { fautesSifflees, bons, mauvais, pctBons, pctBonTiming, totalTimings: timingsRenseignes.length, bonsCW, mauvaisCW, pctBonCW };
 }
 
 function pbpDetailText(row) {
   if (row.cds === 'G-CT-CJ') return `G-CT-CJ${row.gctcj ? ' — ' + row.gctcj : ''}`;
+  if (row.cds === 'INC') return `INC${row.incType ? ' — ' + row.incType : ''}`;
+  if (row.cds === 'MEC') return `MEC${row.mecType ? ' — ' + row.mecType : ''}`;
   if (row.nature === 'Violation') return `Violation${row.violationType ? ' — ' + row.violationType : ''}`;
   if (row.nature === 'Faute') {
     let s = 'Faute';
@@ -543,7 +551,7 @@ function openPlayByPlay(matchId, returnView) {
   playByPlayMatchId = matchId;
   pbpReturnView = returnView || 'matches';
   pbpRows = (m.playByPlay && m.playByPlay.length ? m.playByPlay : emptyPlayByPlayRows()).map(r => ({
-    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', gctcj: '', iotMeca: '', ...r
+    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', gctcj: '', incType: '', mecType: '', iotMeca: '', ...r
   }));
   currentView = 'playbyplay';
   setActiveNav(pbpReturnView);
@@ -555,26 +563,46 @@ function selHtml(rowIndex, field, options, value, placeholder) {
 }
 
 function pbpRowHtml(row, i) {
+  const noWhistle = row.cds === 'CNC' || row.cds === 'INC' || row.cds === 'MEC';
+
   let detail = '';
+  let natureCell = '';
   if (row.cds === 'G-CT-CJ') {
     detail = selHtml(i, 'gctcj', ['GOOD', 'BAD'], row.gctcj, 'Good / Bad');
-  } else if (row.nature === 'Violation') {
-    detail = selHtml(i, 'violationType', VIOLATION_TYPES, row.violationType, 'Type');
-  } else if (row.nature === 'Faute') {
-    detail = selHtml(i, 'fauteType', FAUTE_OFF_DEF, row.fauteType, 'OFF / DEF');
-    if (row.fauteType === 'OFF') {
-      detail += selHtml(i, 'fauteOffType', FAUTE_OFF_TYPES, row.fauteOffType, 'Type');
-    } else if (row.fauteType === 'DEF') {
-      detail += selHtml(i, 'fauteDefAos', FAUTE_DEF_AOS, row.fauteDefAos, 'AOS / nAOS');
-      if (row.fauteDefAos) {
-        detail += selHtml(i, 'fauteDefType', FAUTE_DEF_TYPES, row.fauteDefType, 'Type');
-      }
-    }
-  } else {
+    natureCell = selHtml(i, 'nature', NATURE_OPTIONS, row.nature, 'Nature');
+  } else if (row.cds === 'CNC') {
     detail = `<span class="pbp-dash">—</span>`;
+    natureCell = `<span class="pbp-dash">—</span>`;
+  } else if (row.cds === 'INC') {
+    detail = selHtml(i, 'incType', INC_TYPES, row.incType, 'R1 / R2');
+    natureCell = `<span class="pbp-dash">—</span>`;
+  } else if (row.cds === 'MEC') {
+    detail = selHtml(i, 'mecType', MEC_TYPES, row.mecType, 'AK / AT');
+    natureCell = `<span class="pbp-dash">—</span>`;
+  } else {
+    natureCell = selHtml(i, 'nature', NATURE_OPTIONS, row.nature, 'Nature');
+    if (row.nature === 'Violation') {
+      detail = selHtml(i, 'violationType', VIOLATION_TYPES, row.violationType, 'Type');
+    } else if (row.nature === 'Faute') {
+      detail = selHtml(i, 'fauteType', FAUTE_OFF_DEF, row.fauteType, 'OFF / DEF');
+      if (row.fauteType === 'OFF') {
+        detail += selHtml(i, 'fauteOffType', FAUTE_OFF_TYPES, row.fauteOffType, 'Type');
+      } else if (row.fauteType === 'DEF') {
+        detail += selHtml(i, 'fauteDefAos', FAUTE_DEF_AOS, row.fauteDefAos, 'AOS / nAOS');
+        if (row.fauteDefAos) {
+          detail += selHtml(i, 'fauteDefType', FAUTE_DEF_TYPES, row.fauteDefType, 'Type');
+        }
+      }
+    } else {
+      detail = `<span class="pbp-dash">—</span>`;
+    }
   }
 
-  const bonTiming = row.timing
+  const timingCell = noWhistle
+    ? `<span class="pbp-dash">—</span>`
+    : selHtml(i, 'timing', TIMING_OPTIONS, row.timing, 'Timing');
+
+  const bonTiming = (!noWhistle && row.timing)
     ? selHtml(i, 'bonTiming', ['Oui', 'Non'], row.bonTiming, 'Bon timing ?')
     : `<span class="pbp-dash">—</span>`;
 
@@ -585,9 +613,9 @@ function pbpRowHtml(row, i) {
       <td><div class="pbp-clip-cell"><input type="text" data-i="${i}" data-f="clip" value="${escapeAttr(row.clip)}" placeholder="Clip…">${clipLink}</div></td>
       <td class="pbp-num">${i + 1}</td>
       <td>${selHtml(i, 'cds', CDS_OPTIONS, row.cds, 'CDS')}</td>
-      <td>${selHtml(i, 'timing', TIMING_OPTIONS, row.timing, 'Timing')}</td>
+      <td>${timingCell}</td>
       <td>${bonTiming}</td>
-      <td>${selHtml(i, 'nature', NATURE_OPTIONS, row.nature, 'Nature')}</td>
+      <td>${natureCell}</td>
       <td><div class="pbp-detail-stack">${detail}</div></td>
       <td><input type="text" data-i="${i}" data-f="iotMeca" value="${escapeAttr(row.iotMeca)}" placeholder="Remarque…"></td>
     </tr>
@@ -602,6 +630,7 @@ function pbpStatsHtml() {
     <div class="stat-card"><div class="stat-label">Mauvais coups (IC/INC/MC)</div><div class="stat-value" style="color:#ff8f8f">${s.mauvais}</div></div>
     <div class="stat-card"><div class="stat-label">Ratio bons / mauvais</div><div class="stat-value">${s.pctBons != null ? s.pctBons + '%' : '—'}</div></div>
     <div class="stat-card"><div class="stat-label">% bon timing</div><div class="stat-value">${s.pctBonTiming != null ? s.pctBonTiming + '%' : '—'}</div><div class="stat-sub">${s.totalTimings} coup(s) jugé(s)</div></div>
+    <div class="stat-card"><div class="stat-label">Ratio bon / mauvais CW</div><div class="stat-value">${s.pctBonCW != null ? s.pctBonCW + '%' : '—'}</div><div class="stat-sub">${s.bonsCW} bon / ${s.mauvaisCW} mauvais</div></div>
   `;
 }
 
@@ -656,7 +685,11 @@ function renderPlayByPlayView() {
     if (f === 'fauteType') { pbpRows[i].fauteOffType = ''; pbpRows[i].fauteDefAos = ''; pbpRows[i].fauteDefType = ''; }
     if (f === 'fauteDefAos') { pbpRows[i].fauteDefType = ''; }
     if (f === 'timing') { pbpRows[i].bonTiming = ''; }
-    if (f === 'cds' && el.value !== 'G-CT-CJ') { pbpRows[i].gctcj = ''; }
+    if (f === 'cds') {
+      pbpRows[i].nature = ''; pbpRows[i].violationType = ''; pbpRows[i].fauteType = ''; pbpRows[i].fauteOffType = '';
+      pbpRows[i].fauteDefAos = ''; pbpRows[i].fauteDefType = ''; pbpRows[i].gctcj = ''; pbpRows[i].incType = ''; pbpRows[i].mecType = '';
+      pbpRows[i].timing = ''; pbpRows[i].bonTiming = '';
+    }
     const rowEl = document.getElementById(`pbp-row-${i}`);
     if (rowEl) rowEl.outerHTML = pbpRowHtml(pbpRows[i], i);
     updatePbpStatsBar();
@@ -771,6 +804,7 @@ function renderStatAnalytique() {
           <div class="stat-card"><div class="stat-label">MC / match</div><div class="stat-value">${mcParMatch != null ? mcParMatch : '—'}</div><div class="stat-sub">moyenne sur ${matchsAnalyses} match(s) analysé(s)</div></div>
           ${statCardPct('Bon coup de sifflet', s.pctBons)}
           ${statCardPct('Bon timing de CDS', s.pctBonTiming, `${s.totalTimings} coup(s) jugé(s)`)}
+          ${statCardPct('Ratio bon / mauvais CW', s.pctBonCW, `${s.bonsCW} bon / ${s.mauvaisCW} mauvais`)}
           ${statCardPct('G-CT-CJ GOOD', pctGCTGood, `${totalGCT} G-CT-CJ jugé(s)`)}
         </div>
       </div>
