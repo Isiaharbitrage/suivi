@@ -784,6 +784,8 @@ function renderStatAnalytique() {
   const pctFL = pctBonneFor(allPbpRows, r => r.fauteOffType === 'FL');
   const pctDI = pctBonneFor(allPbpRows, r => r.fauteDefType === 'DI');
   const pctSIMU = pctBonneFor(allPbpRows, r => r.fauteOffType === 'SIMU');
+  const pctVOUT = pctBonneFor(allPbpRows, r => r.violationType === 'V-OUT');
+  const pctVMAR = pctBonneFor(allPbpRows, r => r.violationType === 'V-MAR');
 
   const totalGCT = allPbpRows.filter(r => r.cds === 'G-CT-CJ' && r.gctcj).length;
   const goodGCT = allPbpRows.filter(r => r.cds === 'G-CT-CJ' && r.gctcj === 'GOOD').length;
@@ -823,6 +825,14 @@ function renderStatAnalytique() {
           ${statCardPct('Bonne FL', pctFL)}
           ${statCardPct('Bonne DI', pctDI)}
           ${statCardPct('Bonne SIMU', pctSIMU)}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Justesse par type de violation</div>
+        <div class="stat-grid" style="margin-bottom:0;">
+          ${statCardPct('Bonne V-OUT', pctVOUT)}
+          ${statCardPct('Bonne V-MAR', pctVMAR)}
         </div>
       </div>
     ` : `<div class="panel">${emptyState("Pas encore de données", "Remplis une analyse play-by-play sur au moins un match pour voir apparaître ces statistiques.")}</div>`}
