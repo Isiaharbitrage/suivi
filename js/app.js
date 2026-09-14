@@ -778,6 +778,7 @@ function renderStatAnalytique() {
   const pctOFF = pctBonneFor(allPbpRows, r => r.fauteType === 'OFF');
   const pctAOS = pctBonneFor(allPbpRows, r => r.fauteDefAos === 'AOS');
   const pctECR = pctBonneFor(allPbpRows, r => r.fauteOffType === 'ECR');
+  const pctCharge = pctBonneFor(allPbpRows, r => r.fauteOffType === 'CHA-B' || r.fauteOffType === 'CHA-S');
   const pctREB = pctBonneFor(allPbpRows, r => r.fauteType === 'REB');
   const pctHB = pctBonneFor(allPbpRows, r => r.fauteDefType === 'HB');
   const pctFL = pctBonneFor(allPbpRows, r => r.fauteOffType === 'FL');
@@ -816,6 +817,7 @@ function renderStatAnalytique() {
           ${statCardPct('Bonne faute OFF', pctOFF)}
           ${statCardPct('Bonne faute AOS', pctAOS)}
           ${statCardPct('Bonne faute ECR', pctECR)}
+          ${statCardPct('Bonne charge', pctCharge)}
           ${statCardPct('Bonne faute REB', pctREB)}
           ${statCardPct('Bonne faute HB', pctHB)}
           ${statCardPct('Bonne FL', pctFL)}
