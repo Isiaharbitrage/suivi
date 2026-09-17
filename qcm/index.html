@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QCM Hebdo</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html" class="brand"><span class="dot"></span> QCM Hebdo</a>
+  <div class="nav-links">
+    <a href="index.html" class="active">Accueil</a>
+    <a href="stats.html">Stats</a>
+    <a href="admin.html">Espace prof</a>
+  </div>
+</nav>
+
+<div class="wrapper">
+  <div class="page-title">
+    <h1>Tous les <span class="accent">QCM</span></h1>
+    <p>Choisis un QCM pour t'entraîner. Un nouveau quiz est ajouté chaque semaine.</p>
+  </div>
+
+  <div id="quiz-list-container">
+    <div class="loader">Chargement des QCM…</div>
+  </div>
+</div>
+
+<footer class="site-footer">QCM Hebdo</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="js/app-index.js"></script>
+</body>
+</html>

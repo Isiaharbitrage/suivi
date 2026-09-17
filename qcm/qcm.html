@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QCM — QCM Hebdo</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html" class="brand"><span class="dot"></span> QCM Hebdo</a>
+  <div class="nav-links">
+    <a href="index.html">Accueil</a>
+    <a href="stats.html">Stats</a>
+    <a href="admin.html">Espace prof</a>
+  </div>
+</nav>
+
+<div class="wrapper">
+
+  <div id="view-loading" class="loader">Chargement du QCM…</div>
+
+  <div id="view-error" style="display:none;">
+    <div class="card">
+      <p class="alert alert-error" id="error-message">Ce QCM est introuvable.</p>
+      <a href="index.html" class="btn btn-ghost">← Retour à l'accueil</a>
+    </div>
+  </div>
+
+  <!-- Étape 1 : saisie du prénom -->
+  <div id="view-name" class="center-box card" style="display:none;">
+    <h2 id="name-quiz-title">QCM</h2>
+    <p>Entre ton prénom pour commencer.</p>
+    <div class="field">
+      <label for="prenom-input">Prénom</label>
+      <input type="text" id="prenom-input" placeholder="Ton prénom" autocomplete="given-name" />
+    </div>
+    <button id="start-btn" class="btn btn-primary btn-block">Commencer le QCM</button>
+  </div>
+
+  <!-- Étape 2 : question par question -->
+  <div id="view-quiz" style="display:none;">
+    <div class="card">
+      <div class="progress-bar-track">
+        <div id="progress-fill" class="progress-bar-fill" style="width:0%;"></div>
+      </div>
+      <div class="progress-label">
+        <span id="progress-label-text">Question 1/10</span>
+        <span id="progress-quiz-title"></span>
+      </div>
+      <div class="question-text" id="question-text"></div>
+      <div class="options" id="options-container"></div>
+      <div class="btn-row">
+        <button id="validate-btn" class="btn btn-primary" disabled>Valider ma réponse</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Étape 3 : résultat -->
+  <div id="view-result" style="display:none;">
+    <div class="page-title">
+      <h1 id="result-title">Résultat</h1>
+      <p id="result-sub"></p>
+    </div>
+
+    <div class="card score-hero">
+      <div class="score-value" id="score-value">0/10</div>
+      <div class="score-sub" id="score-sub-text"></div>
+    </div>
+
+    <div style="margin: 24px 0 14px;">
+      <h3>Détail des réponses</h3>
+    </div>
+    <div id="detail-list"></div>
+
+    <div class="btn-row">
+      <button id="download-btn" class="btn btn-primary">⬇ Télécharger le bilan (PDF)</button>
+      <a href="index.html" class="btn btn-ghost">Retour à l'accueil</a>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site-footer">QCM Hebdo</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/app-qcm.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Les QCM : tout le monde peut les lire (les élèves doivent
+    // pouvoir passer un quiz sans être connectés), mais seule une
+    // personne connectée (toi, via admin.html) peut en créer,
+    // modifier ou supprimer.
+    match /qcm_quizzes/{quizId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Les résultats : tout le monde peut en créer (un élève envoie
+    // son résultat sans compte), et tout le monde peut les lire
+    // (nécessaire pour la page stats). En revanche, un résultat ne
+    // peut pas être modifié ou supprimé une fois envoyé, sauf par
+    // une personne connectée (toi), pour éviter que quelqu'un
+    // trafique une note déjà enregistrée.
+    match /qcm_resultats/{resultId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
+    }
+  }
+}

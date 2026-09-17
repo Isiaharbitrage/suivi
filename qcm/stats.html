@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stats — QCM Hebdo</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html" class="brand"><span class="dot"></span> QCM Hebdo</a>
+  <div class="nav-links">
+    <a href="index.html">Accueil</a>
+    <a href="stats.html" class="active">Stats</a>
+    <a href="admin.html">Espace prof</a>
+  </div>
+</nav>
+
+<div class="wrapper">
+  <div class="page-title">
+    <h1>Statistiques</h1>
+    <p>Moyenne des notes obtenues par chaque élève au fil des QCM.</p>
+  </div>
+
+  <div id="global-summary"></div>
+  <div id="stats-container" style="margin-top: 18px;">
+    <div class="loader">Chargement des statistiques…</div>
+  </div>
+</div>
+
+<footer class="site-footer">QCM Hebdo</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="js/app-stats.js"></script>
+</body>
+</html>
