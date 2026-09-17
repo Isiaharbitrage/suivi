@@ -99,6 +99,8 @@ function renderQuestion() {
   progressQuizTitle.textContent = `QCM n°${quiz.numero}`;
   questionText.textContent = q.texte;
 
+  optionsContainer.classList.toggle("options-tf", q.options.length === 2);
+
   optionsContainer.innerHTML = q.options
     .map(
       (opt, i) => `
@@ -145,13 +147,15 @@ function finishQuiz() {
     const given = answers[i];
     const correct = given === q.bonneReponse;
     if (correct) score++;
-    return {
+    const detail = {
       texte: q.texte,
       options: q.options,
       donnee: given,
       bonneReponse: q.bonneReponse,
       correct: correct,
     };
+    if (q.explication) detail.explication = q.explication;
+    return detail;
   });
 
   lastDetails = details;
@@ -200,6 +204,7 @@ function renderResult(score, total, details) {
         </div>
         <div class="detail-answer ${d.correct ? "correct-line" : "wrong-line"}">Ta réponse : <strong>${givenText}</strong></div>
         ${d.correct ? "" : `<div class="detail-answer correct-line">Bonne réponse : <strong>${correctText}</strong></div>`}
+        ${!d.correct && d.explication ? `<div class="detail-explication">${escapeHtml(d.explication)}</div>` : ""}
       </div>`;
     })
     .join("");
@@ -245,13 +250,16 @@ document.getElementById("download-btn").addEventListener("click", () => {
     const givenText = d.options[d.donnee];
     const correctText = d.options[d.bonneReponse];
     addLine(`${i + 1}. ${d.texte}`, { size: 12, bold: true, gapAfter: 4 });
-    addLine(`Réponse donnée : ${givenText}   —   ${d.correct ? "VRAI" : "FAUX"}`, {
+    addLine(`Réponse donnée : ${givenText}   —   ${d.correct ? "CORRECT" : "INCORRECT"}`, {
       size: 10.5,
       color: d.correct ? [22, 163, 116] : [214, 40, 60],
       gapAfter: d.correct ? 12 : 2,
     });
     if (!d.correct) {
-      addLine(`Correction : ${correctText}`, { size: 10.5, color: [90, 90, 90], gapAfter: 12 });
+      addLine(`Correction : ${correctText}`, { size: 10.5, color: [90, 90, 90], gapAfter: d.explication ? 2 : 12 });
+      if (d.explication) {
+        addLine(d.explication, { size: 9.5, color: [120, 120, 120], gapAfter: 12 });
+      }
     }
   });
 

@@ -6,13 +6,14 @@ Site de QCM hebdomadaires — thème rose & noir, pensé pour être hébergé ex
 
 ```
 qcm/
-├── index.html          → page d'accueil, liste tous les QCM
-├── admin.html           → espace prof : connexion + création d'un QCM (10 questions)
-├── qcm.html              → passage d'un QCM (prénom → questions → résultat)
-├── stats.html            → moyenne des notes par élève
-├── style.css              → thème rose & noir partagé par toutes les pages
-├── firebase-config.js     → À COMPLÉTER avec ta configuration Firebase
-├── firestore.rules        → règles de sécurité Firestore à copier dans la console Firebase
+├── index.html                 → page d'accueil, liste tous les QCM
+├── admin.html                  → espace prof : connexion + création d'un QCM (10 questions vrai/faux)
+├── qcm.html                     → passage d'un QCM (prénom → questions → résultat)
+├── stats.html                   → moyenne des notes par élève
+├── style.css                     → thème rose & noir partagé par toutes les pages
+├── firebase-config.js            → À COMPLÉTER avec ta configuration Firebase
+├── firestore.rules               → règles de sécurité Firestore à copier dans la console Firebase
+├── qcm1-fiba-2026.json            → premier QCM prêt à importer (10 questions vrai/faux validées)
 └── js/
     ├── app-index.js
     ├── app-admin.js
@@ -72,11 +73,33 @@ puis ouvre `http://localhost:8000` dans le navigateur.
 ## Comment fonctionne le site
 
 - **Accueil** (`index.html`) : liste tous les QCM publiés (numéro, titre, nombre de questions), du plus ancien au plus récent.
-- **Espace prof** (`admin.html`) : après connexion, formulaire pour créer un nouveau QCM de 10 questions (chacune avec 4 propositions et une bonne réponse à cocher). Le numéro du QCM est calculé automatiquement.
-- **Passage d'un QCM** (`qcm.html`) : l'élève entre son prénom, puis répond aux 10 questions une par une (il faut valider une réponse pour passer à la suivante). Aucune indication vrai/faux n'est donnée pendant le quiz. À la fin, une page affiche la note sur 10, le détail de chaque question (réponse donnée + correction si besoin), et un bouton pour télécharger le bilan en PDF. Le résultat est automatiquement enregistré dans Firestore.
+- **Espace prof** (`admin.html`) : après connexion, deux façons de créer un QCM de 10 questions **vrai/faux** :
+  - **le formulaire manuel** : un champ "titre", puis pour chaque question un énoncé, un choix Vrai/Faux, et une explication optionnelle (affichée uniquement si la réponse donnée est fausse) ;
+  - **l'import rapide (JSON)** : colle un QCM déjà rédigé au format JSON (voir `qcm1-fiba-2026.json` en exemple) et clique sur "Importer et publier" pour le mettre en ligne en un clic, sans retaper chaque question. Format attendu :
+    ```json
+    {
+      "titre": "Titre du QCM",
+      "questions": [
+        { "texte": "Affirmation à juger...", "reponse": true, "explication": "Optionnel : justification." }
+      ]
+    }
+    ```
+    `reponse` vaut `true` si l'affirmation est vraie, `false` si elle est fausse. Il faut exactement 10 questions.
+
+  Dans les deux cas, le numéro du QCM est calculé automatiquement.
+- **Passage d'un QCM** (`qcm.html`) : l'élève entre son prénom, puis répond aux 10 questions une par une en choisissant Vrai ou Faux (il faut valider pour passer à la suivante). Aucune indication n'est donnée pendant le quiz. À la fin, une page affiche la note sur 10, le détail de chaque question (réponse donnée, correction et explication si la réponse est fausse), et un bouton pour télécharger le bilan en PDF. Le résultat est automatiquement enregistré dans Firestore.
 - **Stats** (`stats.html`) : liste tous les élèves ayant passé au moins un QCM, avec leur moyenne générale et, en cliquant sur leur nom, l'historique détaillé de leurs passages.
+
+## Mettre en ligne le premier QCM (`qcm1-fiba-2026.json`)
+
+Une fois Firebase configuré (voir section 1) et le site déployé :
+
+1. Va sur `admin.html` et connecte-toi avec ton compte Firebase.
+2. Ouvre `qcm1-fiba-2026.json` (dans ce dossier), copie tout son contenu.
+3. Colle-le dans la zone "Import rapide (JSON)" de l'espace prof.
+4. Clique sur **Importer et publier**. Le QCM n°1 (10 questions vrai/faux sur les interprétations FIBA 2026, fautes techniques et disruptives) est immédiatement disponible sur la page d'accueil.
 
 ## Personnaliser
 
 - **Couleurs** : tout le thème rose/noir est défini en haut de `style.css`, dans le bloc `:root` (variables `--pink`, `--bg`, etc.) — change ces valeurs pour ajuster les teintes.
-- **Nombre de questions** : fixé à 10 par question de conception (comme demandé). Si tu veux un jour changer ce nombre, modifie la constante `NB_QUESTIONS` dans `js/app-admin.js`.
+- **Nombre de questions** : fixé à 10 par QCM (comme demandé). Si tu veux un jour changer ce nombre, modifie la constante `NB_QUESTIONS` dans `js/app-admin.js`.

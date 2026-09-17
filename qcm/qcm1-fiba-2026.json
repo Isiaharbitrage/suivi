@@ -1,0 +1,55 @@
+{
+  "titre": "Interprétations FIBA 2026 — Fautes techniques & disruptives",
+  "questions": [
+    {
+      "texte": "La ligne médiane et le cercle central peuvent être d'une couleur différente de celle des lignes de limite du terrain et des autres marquages.",
+      "reponse": true,
+      "explication": "Interprétation 2-1 : seules les lignes de limite et les marquages appariés doivent être de couleur identique entre eux ; la ligne médiane et le cercle central peuvent différer."
+    },
+    {
+      "texte": "Les chaussettes de tous les membres d'une équipe doivent être de la même couleur dominante, ET elles doivent être visibles en permanence.",
+      "reponse": false,
+      "explication": "Interprétations 4-9 et 4-11 : même couleur dominante obligatoire pour toutes les chaussettes, mais elles n'ont pas besoin d'être visibles (manchons de compression autorisés)."
+    },
+    {
+      "texte": "Proche de l'expiration du temps de jeu du 4e quart-temps, A1 commence son jump shot et le mouvement vers le haut a débuté. À ce moment, B2 attrape le maillot de A1 et, dans un mouvement continu, A1 marque le panier. La faute sera une faute disruptive suivie de 1 lancer franc.",
+      "reponse": true,
+      "explication": "Interprétation 37-8 : contact illégal pendant l'action de tir, en fin de quart-temps, sans tentative légitime de jouer le ballon → faute disruptive. Si le tir est réussi, le panier compte et 1 lancer franc supplémentaire est accordé."
+    },
+    {
+      "texte": "Si une faute technique de catégorie 1 est sifflée pendant l'intervalle de jeu avant le match et que l'entraîneur désigne un joueur qui n'est pas titulaire pour tirer le lancer franc, ce lancer franc est tiré par ce joueur désigné, même s'il n'est pas titulaire.",
+      "reponse": false,
+      "explication": "Interprétation 9-8 : seul un des 5 joueurs titulaires désignés peut tirer ce lancer franc ; aucun remplacement n'est possible avant le début du temps de jeu."
+    },
+    {
+      "texte": "Sur une action de tir en mouvement continu à la suite d'un drive vers le panier, le nombre de pas légaux effectués après la réception (« gather ») du ballon n'a pas d'importance pour déterminer si le joueur est en action de tir.",
+      "reponse": true,
+      "explication": "Interprétation 15-12 : le nombre de pas légaux effectués après la réception du ballon n'est pas déterminant pour juger de l'action de tir sur un drive."
+    },
+    {
+      "texte": "Un contact illégal d'un défenseur qui tente réellement de jouer le ballon peut être qualifié de faute disruptive, à condition que ce contact empêche l'équipe adverse de terminer sa transition offensive.",
+      "reponse": false,
+      "explication": "Interprétations 37-1 et 37-5 : un des critères essentiels de la faute disruptive est que le défenseur ne cherche pas à jouer le ballon. S'il le tente légitimement, ce n'est pas une faute disruptive."
+    },
+    {
+      "texte": "Une faute technique de catégorie 2 compte, au même titre qu'une faute technique de catégorie 1, pour la disqualification du joueur.",
+      "reponse": false,
+      "explication": "Interprétation 36-2 : seules les fautes techniques de catégorie 1 comptent pour la disqualification du joueur."
+    },
+    {
+      "texte": "Alors qu'il reste 8 secondes au chronomètre des tirs, B1 est sanctionné d'une faute disruptive (ou antisportive) contre A1 ; puis (a) A2 ou (b) B2 est sanctionné d'une faute technique. Interprétation : (a) si c'est A2 qui est sanctionné, un joueur quelconque de l'équipe B tire 1 lancer franc sans alignement ; (b) si c'est B2 qui est sanctionné, un joueur quelconque de l'équipe A tire 1 lancer franc sans alignement. Dans les deux cas, A1 tire ensuite 2 lancers francs sans alignement pour la faute disruptive/antisportive, puis l'équipe A remet le ballon en jeu depuis la ligne de remise en jeu de sa zone avant, opposée à la table de marque, avec 14 secondes au chronomètre des tirs.",
+      "reponse": true,
+      "explication": "Interprétation 43-11 : séquence de lancers francs sans alignement pour la faute technique puis pour la faute disruptive/antisportive, suivie d'une remise en jeu de l'équipe A opposée à la table de marque, 14 secondes au chrono des tirs."
+    },
+    {
+      "texte": "A1 gêne le tireur B2 pendant son tir. Le tir est raté. L'arbitre siffle une faute technique à l'encontre de A1 avant qu'une équipe ait le contrôle de la balle. L'équipe B aura le droit à 1 LF, la faute technique sera notifiée comme une B1 et le jeu reprendra par une possession suivant la flèche de possession alternée.",
+      "reponse": false,
+      "explication": "Interprétations 36-9 et 36-10 (logique inversée) : le jeu reprend par une remise en jeu de l'équipe du tireur gêné à l'endroit de la gêne, pas par une possession suivant la flèche alternée. La faute est en outre imputée directement au joueur A1, pas notée « B1 »."
+    },
+    {
+      "texte": "Une erreur de catégorie 2 sur le chronomètre des 24 secondes reste corrigible même après un changement de possession du ballon en jeu.",
+      "reponse": false,
+      "explication": "Interprétation 45-30 : une erreur de catégorie 2 sur le chrono des tirs n'est plus corrigible après un changement de possession d'un ballon vivant, un panier valide de l'équipe en contrôle, ou la fin du match."
+    }
+  ]
+}

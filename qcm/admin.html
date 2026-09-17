@@ -42,7 +42,7 @@
     <div class="page-title" style="display:flex; align-items:flex-start; justify-content:space-between; gap: 16px;">
       <div>
         <h1>Nouveau <span class="accent">QCM</span></h1>
-        <p>10 questions, 4 propositions chacune. Sélectionne la bonne réponse pour chaque question.</p>
+        <p>10 questions vrai/faux. Sélectionne la bonne réponse pour chaque question, ou importe un QCM complet au format JSON.</p>
       </div>
       <button id="logout-btn" class="btn btn-ghost">Se déconnecter</button>
     </div>
@@ -50,9 +50,21 @@
     <div id="admin-alert"></div>
 
     <div class="card" style="margin-bottom: 20px;">
+      <h3 style="margin-bottom:6px;">Import rapide (JSON)</h3>
+      <p style="margin-top:0;">Colle un QCM complet au format JSON pour le publier en un clic, sans remplir le formulaire question par question.</p>
+      <div class="field">
+        <textarea id="import-json" rows="6" placeholder='{"titre": "...", "questions": [{"texte": "...", "reponse": true, "explication": "..."}, ...]}'></textarea>
+      </div>
+      <div id="import-alert"></div>
+      <button id="import-btn" class="btn btn-ghost">Importer et publier</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card" style="margin-bottom: 20px;">
       <div class="field" style="margin-bottom:0;">
         <label for="quiz-title">Titre du QCM</label>
-        <input type="text" id="quiz-title" placeholder="Ex : Les fractions" />
+        <input type="text" id="quiz-title" placeholder="Ex : Interprétations FIBA 2026" />
         <p class="helper-text" id="quiz-numero-preview"></p>
       </div>
     </div>
