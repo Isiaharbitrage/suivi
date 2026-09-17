@@ -8,12 +8,10 @@
       > Ajouter une application Web (si pas déjà fait) > Copie
       l'objet "firebaseConfig" et colle ses valeurs ci-dessous.
    4. Active Firestore Database (mode production) si ce n'est
-      pas déjà fait, et Firebase Authentication (méthode
-      Email/Mot de passe) pour pouvoir te connecter à la page
-      admin.
-   5. Crée-toi un compte (email/mot de passe) dans
-      Authentication > Users si tu n'en as pas déjà un — c'est
-      celui-ci qui te servira à te connecter sur admin.html.
+      pas déjà fait.
+
+   Remarque : l'espace prof (admin.html) n'a pas de connexion —
+   il n'y a donc rien à configurer côté Authentication.
    ======================================================= */
 
 const firebaseConfig = {
@@ -27,7 +25,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const auth = firebase.auth();
 
 /* Noms des collections Firestore utilisées par ce site.
    Choisis exprès différents de ceux du site arbitrage pour

@@ -7,7 +7,7 @@ Site de QCM hebdomadaires — thème rose & noir, pensé pour être hébergé ex
 ```
 qcm/
 ├── index.html                 → page d'accueil, liste tous les QCM
-├── admin.html                  → espace prof : connexion + création d'un QCM (10 questions vrai/faux)
+├── admin.html                  → espace prof : création d'un QCM (10 questions vrai/faux), accès libre sans connexion
 ├── qcm.html                     → passage d'un QCM (prénom → questions → résultat)
 ├── stats.html                   → moyenne des notes par élève
 ├── style.css                     → thème rose & noir partagé par toutes les pages
@@ -27,13 +27,14 @@ qcm/
 2. Tu peux **réutiliser le même projet Firebase que ton site d'arbitrage** (recommandé, ça reste gratuit) ou en créer un nouveau.
 3. Si tu réutilises le même projet : Paramètres du projet (roue crantée) → tes applications Web → copie l'objet `firebaseConfig`. Colle ses valeurs dans `firebase-config.js` (remplace les `"REMPLACE_MOI"`).
 4. Active **Firestore Database** si ce n'est pas déjà fait (mode production).
-5. Active **Authentication → méthode Email/Mot de passe**, et crée-toi un compte (email + mot de passe) dans l'onglet "Users" si tu n'en as pas déjà un sur ce projet. C'est ce compte qui te permettra de te connecter sur `admin.html` pour créer les QCM — les élèves, eux, n'ont besoin d'aucun compte.
-6. Dans **Firestore Database → Règles**, colle le contenu de `firestore.rules` et publie. Ces règles :
-   - laissent tout le monde lire les QCM et les résultats (nécessaire pour que les élèves passent les quiz et que la page stats fonctionne),
-   - réservent la création/modification des QCM aux personnes connectées (toi),
-   - permettent à n'importe qui d'envoyer un résultat (les élèves ne sont pas connectés), mais empêchent de modifier ou supprimer un résultat déjà enregistré sans être connecté.
+5. Dans **Firestore Database → Règles**, colle le contenu de `firestore.rules` et publie. Ces règles :
+   - laissent tout le monde lire et écrire les QCM (l'espace prof `admin.html` n'a pas de connexion — voir l'encadré ci-dessous),
+   - laissent tout le monde lire les résultats (nécessaire pour que la page stats fonctionne) et en créer (un élève envoie son résultat sans compte),
+   - empêchent en revanche de modifier ou supprimer un résultat une fois envoyé, pour personne.
 
    ⚠️ Ces collections (`qcm_quizzes`, `qcm_resultats`) sont différentes de celles utilisées par ton site d'arbitrage, donc même en réutilisant le même projet Firebase, rien ne se mélangera. Si ton site d'arbitrage a déjà des règles Firestore, pense à **fusionner** les deux blocs de règles dans un seul fichier plutôt que d'écraser les règles existantes.
+
+   ⚠️ **Important** : par choix, `admin.html` n'a aucune protection par mot de passe — toute personne qui connaît cette adresse peut créer, modifier ou supprimer un QCM. Ne partage donc pas ce lien publiquement (ne le mets pas dans le menu visible des élèves, ne le publie pas sur les réseaux, etc.).
 
 ## 2. Placer les fichiers dans ton dépôt "suivi"
 

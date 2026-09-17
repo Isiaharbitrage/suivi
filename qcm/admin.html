@@ -13,38 +13,16 @@
   <div class="nav-links">
     <a href="index.html">Accueil</a>
     <a href="stats.html">Stats</a>
-    <a href="admin.html" class="active">Espace prof</a>
   </div>
 </nav>
 
 <div class="wrapper">
 
-  <!-- Formulaire de connexion -->
-  <div id="login-section" class="center-box card" style="display:none;">
-    <h2>Connexion</h2>
-    <p>Connecte-toi pour créer un nouveau QCM.</p>
-    <div id="login-error"></div>
-    <form id="login-form">
-      <div class="field">
-        <label for="login-email">Email</label>
-        <input type="email" id="login-email" required autocomplete="username" />
-      </div>
-      <div class="field">
-        <label for="login-password">Mot de passe</label>
-        <input type="password" id="login-password" required autocomplete="current-password" />
-      </div>
-      <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
-    </form>
-  </div>
-
-  <!-- Espace de création (visible une fois connecté) -->
-  <div id="admin-section" style="display:none;">
-    <div class="page-title" style="display:flex; align-items:flex-start; justify-content:space-between; gap: 16px;">
-      <div>
-        <h1>Nouveau <span class="accent">QCM</span></h1>
-        <p>10 questions vrai/faux. Sélectionne la bonne réponse pour chaque question, ou importe un QCM complet au format JSON.</p>
-      </div>
-      <button id="logout-btn" class="btn btn-ghost">Se déconnecter</button>
+  <!-- Espace de création -->
+  <div id="admin-section">
+    <div class="page-title">
+      <h1>Nouveau <span class="accent">QCM</span></h1>
+      <p>10 questions vrai/faux. Sélectionne la bonne réponse pour chaque question, ou importe un QCM complet au format JSON.</p>
     </div>
 
     <div id="admin-alert"></div>
@@ -81,7 +59,6 @@
 <footer class="site-footer">QCM Hebdo — Espace prof</footer>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="js/app-admin.js"></script>

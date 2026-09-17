@@ -1,13 +1,9 @@
-/* Page admin : connexion + création d'un QCM de 10 questions vrai/faux */
+/* Page admin : création d'un QCM de 10 questions vrai/faux (accès libre, sans connexion) */
 
 const NB_QUESTIONS = 10;
 const TF_LABELS = ["Vrai", "Faux"];
 
-const loginSection = document.getElementById("login-section");
 const adminSection = document.getElementById("admin-section");
-const loginForm = document.getElementById("login-form");
-const loginError = document.getElementById("login-error");
-const logoutBtn = document.getElementById("logout-btn");
 const questionsContainer = document.getElementById("questions-container");
 const quizTitleInput = document.getElementById("quiz-title");
 const numeroPreview = document.getElementById("quiz-numero-preview");
@@ -19,33 +15,7 @@ const importBtn = document.getElementById("import-btn");
 
 let nextNumero = 1;
 
-/* ---------- Auth ---------- */
-
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    loginSection.style.display = "none";
-    adminSection.style.display = "block";
-    initAdminForm();
-  } else {
-    loginSection.style.display = "block";
-    adminSection.style.display = "none";
-  }
-});
-
-loginForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  loginError.innerHTML = "";
-  const email = document.getElementById("login-email").value.trim();
-  const password = document.getElementById("login-password").value;
-
-  auth.signInWithEmailAndPassword(email, password).catch((err) => {
-    loginError.innerHTML = `<p class="alert alert-error">Connexion impossible : ${escapeHtml(err.message)}</p>`;
-  });
-});
-
-logoutBtn.addEventListener("click", () => {
-  auth.signOut();
-});
+initAdminForm();
 
 /* ---------- Helpers ---------- */
 
