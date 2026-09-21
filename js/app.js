@@ -562,6 +562,24 @@ function selHtml(rowIndex, field, options, value, placeholder) {
   return `<select data-i="${rowIndex}" data-f="${field}"><option value="">${placeholder || '—'}</option>${options.map(o => `<option value="${o}" ${value === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
 }
 
+function natureCascadeHtml(i, row) {
+  if (row.nature === 'Violation') {
+    return selHtml(i, 'violationType', VIOLATION_TYPES, row.violationType, 'Type');
+  } else if (row.nature === 'Faute') {
+    let html = selHtml(i, 'fauteType', FAUTE_OFF_DEF, row.fauteType, 'OFF / DEF');
+    if (row.fauteType === 'OFF') {
+      html += selHtml(i, 'fauteOffType', FAUTE_OFF_TYPES, row.fauteOffType, 'Type');
+    } else if (row.fauteType === 'DEF') {
+      html += selHtml(i, 'fauteDefAos', FAUTE_DEF_AOS, row.fauteDefAos, 'AOS / nAOS');
+      if (row.fauteDefAos) {
+        html += selHtml(i, 'fauteDefType', FAUTE_DEF_TYPES, row.fauteDefType, 'Type');
+      }
+    }
+    return html;
+  }
+  return '';
+}
+
 function pbpRowHtml(row, i) {
   const noWhistle = row.cds === 'CNC' || row.cds === 'INC' || row.cds === 'MEC';
 
@@ -574,28 +592,14 @@ function pbpRowHtml(row, i) {
     detail = `<span class="pbp-dash">—</span>`;
     natureCell = `<span class="pbp-dash">—</span>`;
   } else if (row.cds === 'INC') {
-    detail = selHtml(i, 'incType', INC_TYPES, row.incType, 'R1 / R2');
-    natureCell = `<span class="pbp-dash">—</span>`;
+    natureCell = selHtml(i, 'nature', NATURE_OPTIONS, row.nature, 'Nature');
+    detail = selHtml(i, 'incType', INC_TYPES, row.incType, 'R1 / R2') + natureCascadeHtml(i, row);
   } else if (row.cds === 'MEC') {
     detail = selHtml(i, 'mecType', MEC_TYPES, row.mecType, 'AK / AT');
     natureCell = `<span class="pbp-dash">—</span>`;
   } else {
     natureCell = selHtml(i, 'nature', NATURE_OPTIONS, row.nature, 'Nature');
-    if (row.nature === 'Violation') {
-      detail = selHtml(i, 'violationType', VIOLATION_TYPES, row.violationType, 'Type');
-    } else if (row.nature === 'Faute') {
-      detail = selHtml(i, 'fauteType', FAUTE_OFF_DEF, row.fauteType, 'OFF / DEF');
-      if (row.fauteType === 'OFF') {
-        detail += selHtml(i, 'fauteOffType', FAUTE_OFF_TYPES, row.fauteOffType, 'Type');
-      } else if (row.fauteType === 'DEF') {
-        detail += selHtml(i, 'fauteDefAos', FAUTE_DEF_AOS, row.fauteDefAos, 'AOS / nAOS');
-        if (row.fauteDefAos) {
-          detail += selHtml(i, 'fauteDefType', FAUTE_DEF_TYPES, row.fauteDefType, 'Type');
-        }
-      }
-    } else {
-      detail = `<span class="pbp-dash">—</span>`;
-    }
+    detail = natureCascadeHtml(i, row) || `<span class="pbp-dash">—</span>`;
   }
 
   const timingCell = noWhistle
