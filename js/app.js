@@ -162,10 +162,10 @@ function computePbpStats(rows) {
   const timingsRenseignes = rows.filter(r => r.timing && r.bonTiming);
   const bonsTimings = timingsRenseignes.filter(r => r.bonTiming === 'Oui').length;
   const pctBonTiming = timingsRenseignes.length ? Math.round((bonsTimings / timingsRenseignes.length) * 100) : null;
-  const cwRows = rows.filter(r => r.timing === 'CW' && r.bonTiming);
-  const bonsCW = cwRows.filter(r => r.bonTiming === 'Oui').length;
-  const mauvaisCW = cwRows.filter(r => r.bonTiming === 'Non').length;
-  const pctBonCW = cwRows.length ? Math.round((bonsCW / cwRows.length) * 100) : null;
+  const bonsCW = rows.filter(r => r.timing === 'CW' && r.cds === 'CC').length;
+  const mauvaisCW = rows.filter(r => r.timing === 'CW' && (r.cds === 'IC' || r.cds === 'MC')).length;
+  const totalCW = bonsCW + mauvaisCW;
+  const pctBonCW = totalCW ? Math.round((bonsCW / totalCW) * 100) : null;
   return { fautesSifflees, bons, mauvais, pctBons, pctBonTiming, totalTimings: timingsRenseignes.length, bonsCW, mauvaisCW, pctBonCW };
 }
 
