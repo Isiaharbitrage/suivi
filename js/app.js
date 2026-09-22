@@ -149,7 +149,7 @@ function emptyPlayByPlayRows(n = PBP_ROW_COUNT) {
   return Array.from({ length: n }, () => ({
     clip: '', cds: '', timing: '', bonTiming: '', nature: '',
     violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '',
-    gctcj: '', incType: '', mecType: '', iotMeca: ''
+    gctcj: '', incType: '', mecType: '', evaluation: '', iotMeca: ''
   }));
 }
 
@@ -188,7 +188,7 @@ function pbpDetailText(row) {
 }
 
 function hasAnyData(row) {
-  return !!(row.clip || row.cds || row.timing || row.nature || row.iotMeca);
+  return !!(row.clip || row.cds || row.timing || row.nature || row.iotMeca || row.evaluation);
 }
 
 /* ---------------- Dashboard ---------------- */
@@ -551,7 +551,7 @@ function openPlayByPlay(matchId, returnView) {
   playByPlayMatchId = matchId;
   pbpReturnView = returnView || 'matches';
   pbpRows = (m.playByPlay && m.playByPlay.length ? m.playByPlay : emptyPlayByPlayRows()).map(r => ({
-    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', gctcj: '', incType: '', mecType: '', iotMeca: '', ...r
+    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', gctcj: '', incType: '', mecType: '', evaluation: '', iotMeca: '', ...r
   }));
   currentView = 'playbyplay';
   setActiveNav(pbpReturnView);
@@ -621,6 +621,7 @@ function pbpRowHtml(row, i) {
       <td>${bonTiming}</td>
       <td>${natureCell}</td>
       <td><div class="pbp-detail-stack">${detail}</div></td>
+      <td><input type="number" step="any" data-i="${i}" data-f="evaluation" value="${escapeAttr(row.evaluation)}" placeholder="Note…" style="width:64px;"></td>
       <td><input type="text" data-i="${i}" data-f="iotMeca" value="${escapeAttr(row.iotMeca)}" placeholder="Remarque…"></td>
     </tr>
   `;
@@ -663,7 +664,7 @@ function renderPlayByPlayView() {
     <div class="panel" style="overflow-x:auto;">
       <table class="pbp-table">
         <thead>
-          <tr><th>Clip</th><th>#</th><th>CDS</th><th>Timing</th><th>Bon timing</th><th>Nature</th><th>Détail</th><th>IOT / MECA</th></tr>
+          <tr><th>Clip</th><th>#</th><th>CDS</th><th>Timing</th><th>Bon timing</th><th>Nature</th><th>Détail</th><th>Évaluation</th><th>IOT / MECA</th></tr>
         </thead>
         <tbody id="pbp-tbody">${pbpRows.map((r, i) => pbpRowHtml(r, i)).join('')}</tbody>
       </table>
@@ -740,11 +741,11 @@ function exportPbpPdf(match, rows) {
     .map((r, idx) => ({ ...r, num: idx + 1 }))
     .filter(hasAnyData);
 
-  const body = filled.map(r => [r.num, r.clip || '', r.cds || '', r.timing || '', r.bonTiming || '', r.nature || '', pbpDetailText(r), r.iotMeca || '']);
+  const body = filled.map(r => [r.num, r.clip || '', r.cds || '', r.timing || '', r.bonTiming || '', r.nature || '', pbpDetailText(r), r.evaluation || '', r.iotMeca || '']);
 
   docPdf.autoTable({
     startY: 42,
-    head: [['#', 'Clip', 'CDS', 'Timing', 'Bon timing', 'Nature', 'Détail', 'IOT / MECA']],
+    head: [['#', 'Clip', 'CDS', 'Timing', 'Bon timing', 'Nature', 'Détail', 'Éval', 'IOT / MECA']],
     body,
     styles: { fontSize: 8, cellWidth: 'wrap' },
     columnStyles: { 1: { cellWidth: 40 }, 6: { cellWidth: 32 } },
@@ -777,6 +778,8 @@ function renderStatAnalytique() {
   const fautesParMatch = matchsAnalyses ? (s.fautesSifflees / matchsAnalyses).toFixed(1) : null;
   const mcCount = allPbpRows.filter(r => r.cds === 'MC').length;
   const mcParMatch = matchsAnalyses ? (mcCount / matchsAnalyses).toFixed(1) : null;
+  const evalValues = allPbpRows.map(r => r.evaluation).filter(v => v !== '' && v != null).map(Number).filter(v => !isNaN(v));
+  const avgEval = evalValues.length ? (evalValues.reduce((a, b) => a + b, 0) / evalValues.length).toFixed(1) : null;
 
   const pctDEF = pctBonneFor(allPbpRows, r => r.fauteType === 'DEF');
   const pctOFF = pctBonneFor(allPbpRows, r => r.fauteType === 'OFF');
@@ -809,6 +812,7 @@ function renderStatAnalytique() {
         <div class="stat-grid" style="margin-bottom:0;">
           <div class="stat-card"><div class="stat-label">Fautes sifflées / match</div><div class="stat-value">${fautesParMatch != null ? fautesParMatch : '—'}</div><div class="stat-sub">moyenne sur ${matchsAnalyses} match(s) analysé(s)</div></div>
           <div class="stat-card"><div class="stat-label">MC / match</div><div class="stat-value">${mcParMatch != null ? mcParMatch : '—'}</div><div class="stat-sub">moyenne sur ${matchsAnalyses} match(s) analysé(s)</div></div>
+          <div class="stat-card"><div class="stat-label">Moyenne d'éval</div><div class="stat-value">${avgEval != null ? avgEval : '—'}</div><div class="stat-sub">${evalValues.length} évaluation(s) renseignée(s)</div></div>
           ${statCardPct('Bon coup de sifflet', s.pctBons)}
           ${statCardPct('Bon timing de CDS', s.pctBonTiming, `${s.totalTimings} coup(s) jugé(s)`)}
           ${statCardPct('Ratio bon / mauvais CW', s.pctBonCW, `${s.bonsCW} bon / ${s.mauvaisCW} mauvais`)}
