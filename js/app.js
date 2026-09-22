@@ -28,6 +28,7 @@ let currentView = 'dashboard';
 let playByPlayMatchId = null;
 let pbpReturnView = 'matches';
 let pbpRows = [];
+let pbpEvaluation = '';
 let pbpSaveTimer = null;
 
 const NIVEAUX = ["NM1", "LBWL", "CDF"];
@@ -149,7 +150,7 @@ function emptyPlayByPlayRows(n = PBP_ROW_COUNT) {
   return Array.from({ length: n }, () => ({
     clip: '', cds: '', timing: '', bonTiming: '', nature: '',
     violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '',
-    gctcj: '', incType: '', mecType: '', evaluation: '', iotMeca: ''
+    gctcj: '', incType: '', mecType: '', iotMeca: ''
   }));
 }
 
@@ -188,7 +189,7 @@ function pbpDetailText(row) {
 }
 
 function hasAnyData(row) {
-  return !!(row.clip || row.cds || row.timing || row.nature || row.iotMeca || row.evaluation);
+  return !!(row.clip || row.cds || row.timing || row.nature || row.iotMeca);
 }
 
 /* ---------------- Dashboard ---------------- */
@@ -551,8 +552,9 @@ function openPlayByPlay(matchId, returnView) {
   playByPlayMatchId = matchId;
   pbpReturnView = returnView || 'matches';
   pbpRows = (m.playByPlay && m.playByPlay.length ? m.playByPlay : emptyPlayByPlayRows()).map(r => ({
-    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', gctcj: '', incType: '', mecType: '', evaluation: '', iotMeca: '', ...r
+    clip: '', cds: '', timing: '', bonTiming: '', nature: '', violationType: '', fauteType: '', fauteOffType: '', fauteDefAos: '', fauteDefType: '', gctcj: '', incType: '', mecType: '', iotMeca: '', ...r
   }));
+  pbpEvaluation = (m.evaluation != null) ? m.evaluation : '';
   currentView = 'playbyplay';
   setActiveNav(pbpReturnView);
   renderPlayByPlayView();
@@ -621,7 +623,6 @@ function pbpRowHtml(row, i) {
       <td>${bonTiming}</td>
       <td>${natureCell}</td>
       <td><div class="pbp-detail-stack">${detail}</div></td>
-      <td><input type="number" step="any" data-i="${i}" data-f="evaluation" value="${escapeAttr(row.evaluation)}" placeholder="Note…" style="width:64px;"></td>
       <td><input type="text" data-i="${i}" data-f="iotMeca" value="${escapeAttr(row.iotMeca)}" placeholder="Remarque…"></td>
     </tr>
   `;
@@ -660,11 +661,16 @@ function renderPlayByPlayView() {
         <button class="btn btn-primary" id="pbp-save-btn">Enregistrer</button>
       </div>
     </div>
+    <div class="panel" style="display:flex; align-items:center; gap:14px; margin-bottom:20px;">
+      <div class="panel-title" style="margin:0;">Évaluation globale du match</div>
+      <input type="number" step="any" id="pbp-eval-input" value="${escapeAttr(pbpEvaluation)}" placeholder="Note…"
+        style="width:100px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:9px 11px; color:var(--text); font-size:15px; font-family:var(--font-display);">
+    </div>
     <div class="stat-grid" id="pbp-stats">${pbpStatsHtml()}</div>
     <div class="panel" style="overflow-x:auto;">
       <table class="pbp-table">
         <thead>
-          <tr><th>Clip</th><th>#</th><th>CDS</th><th>Timing</th><th>Bon timing</th><th>Nature</th><th>Détail</th><th>Évaluation</th><th>IOT / MECA</th></tr>
+          <tr><th>Clip</th><th>#</th><th>CDS</th><th>Timing</th><th>Bon timing</th><th>Nature</th><th>Détail</th><th>IOT / MECA</th></tr>
         </thead>
         <tbody id="pbp-tbody">${pbpRows.map((r, i) => pbpRowHtml(r, i)).join('')}</tbody>
       </table>
@@ -679,6 +685,10 @@ function renderPlayByPlayView() {
   });
   document.getElementById('pbp-save-btn').addEventListener('click', () => savePlayByPlay(true));
   document.getElementById('pbp-pdf-btn').addEventListener('click', () => exportPbpPdf(m, pbpRows));
+  document.getElementById('pbp-eval-input').addEventListener('input', (e) => {
+    pbpEvaluation = e.target.value;
+    scheduleAutosave();
+  });
 
   const tbody = document.getElementById('pbp-tbody');
   tbody.addEventListener('change', (e) => {
@@ -717,7 +727,8 @@ function scheduleAutosave() {
 async function savePlayByPlay(manual) {
   if (!playByPlayMatchId) return;
   try {
-    await updateDoc(doc(db, 'users', currentUser.uid, 'matches', playByPlayMatchId), { playByPlay: pbpRows });
+    const evalValue = pbpEvaluation === '' ? null : Number(pbpEvaluation);
+    await updateDoc(doc(db, 'users', currentUser.uid, 'matches', playByPlayMatchId), { playByPlay: pbpRows, evaluation: evalValue });
     if (manual) showToast('Analyse enregistrée.');
   } catch (err) {
     if (manual) alert("Erreur lors de l'enregistrement : " + err.message);
@@ -741,11 +752,11 @@ function exportPbpPdf(match, rows) {
     .map((r, idx) => ({ ...r, num: idx + 1 }))
     .filter(hasAnyData);
 
-  const body = filled.map(r => [r.num, r.clip || '', r.cds || '', r.timing || '', r.bonTiming || '', r.nature || '', pbpDetailText(r), r.evaluation || '', r.iotMeca || '']);
+  const body = filled.map(r => [r.num, r.clip || '', r.cds || '', r.timing || '', r.bonTiming || '', r.nature || '', pbpDetailText(r), r.iotMeca || '']);
 
   docPdf.autoTable({
     startY: 42,
-    head: [['#', 'Clip', 'CDS', 'Timing', 'Bon timing', 'Nature', 'Détail', 'Éval', 'IOT / MECA']],
+    head: [['#', 'Clip', 'CDS', 'Timing', 'Bon timing', 'Nature', 'Détail', 'IOT / MECA']],
     body,
     styles: { fontSize: 8, cellWidth: 'wrap' },
     columnStyles: { 1: { cellWidth: 40 }, 6: { cellWidth: 32 } },
@@ -778,7 +789,7 @@ function renderStatAnalytique() {
   const fautesParMatch = matchsAnalyses ? (s.fautesSifflees / matchsAnalyses).toFixed(1) : null;
   const mcCount = allPbpRows.filter(r => r.cds === 'MC').length;
   const mcParMatch = matchsAnalyses ? (mcCount / matchsAnalyses).toFixed(1) : null;
-  const evalValues = allPbpRows.map(r => r.evaluation).filter(v => v !== '' && v != null).map(Number).filter(v => !isNaN(v));
+  const evalValues = matches.map(m => m.evaluation).filter(v => v !== undefined && v !== null && v !== '').map(Number).filter(v => !isNaN(v));
   const avgEval = evalValues.length ? (evalValues.reduce((a, b) => a + b, 0) / evalValues.length).toFixed(1) : null;
 
   const pctDEF = pctBonneFor(allPbpRows, r => r.fauteType === 'DEF');
