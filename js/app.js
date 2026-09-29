@@ -157,7 +157,7 @@ function emptyPlayByPlayRows(n = PBP_ROW_COUNT) {
 function computePbpStats(rows) {
   const fautesSifflees = rows.filter(r => r.nature === 'Faute').length;
   const bons = rows.filter(r => r.cds === 'CC' || r.cds === 'CNC').length;
-  const mauvais = rows.filter(r => r.cds === 'IC' || r.cds === 'INC' || r.cds === 'MC').length;
+  const mauvais = rows.filter(r => r.cds === 'IC' || r.cds === 'MC' || (r.cds === 'INC' && r.incType !== 'R2')).length;
   const totalJuges = bons + mauvais;
   const pctBons = totalJuges ? Math.round((bons / totalJuges) * 100) : null;
   const timingsRenseignes = rows.filter(r => r.timing && r.bonTiming);
