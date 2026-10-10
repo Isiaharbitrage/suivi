@@ -20,3 +20,21 @@ export const autoAuth = {
   email: "site-arbitrage@example.com",
   password: "Bxk92Trq!84vLmZ7"
 };
+
+// ---------------------------------------------------------------
+// Espace coaching (second projet Firebase, voir le README du site coaching)
+// À remplir une fois le projet coaching créé. Tant que ce n'est pas fait,
+// le bouton « Publier au coaching » te le signale simplement.
+// ---------------------------------------------------------------
+export const coachingConfig = {
+  apiKey: "AIzaSyBgNgTno_RCh0IBEN4bIYc1dbJeHkHwH6M",
+  authDomain: "coaching-arbitrage.firebaseapp.com",
+  projectId: "coaching-arbitrage",
+  storageBucket: "coaching-arbitrage.firebasestorage.app",
+  messagingSenderId: "359461498848",
+  appId: "1:359461498848:web:0b27df7c2d42597a648585"
+};
+
+// Ton e-mail de coach (le même que sur l'espace coaching). Le mot de passe
+// est demandé à chaque publication et n'est jamais enregistré.
+export const COACH_EMAIL = "isiah.schmidt@hotmail.fr";

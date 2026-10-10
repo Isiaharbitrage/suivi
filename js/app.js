@@ -1,8 +1,8 @@
-import { firebaseConfig, autoAuth } from './firebase-config.js';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { firebaseConfig, autoAuth, coachingConfig, COACH_EMAIL } from './firebase-config.js';
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
@@ -658,6 +658,7 @@ function renderPlayByPlayView() {
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button class="btn btn-ghost" id="pbp-back-btn">← Retour</button>
         <button class="btn btn-ghost" id="pbp-pdf-btn">⬇ Télécharger en PDF</button>
+        <button class="btn btn-ghost" id="pbp-publish-btn">📤 Publier au coaching</button>
         <button class="btn btn-primary" id="pbp-save-btn">Enregistrer</button>
       </div>
     </div>
@@ -685,6 +686,7 @@ function renderPlayByPlayView() {
   });
   document.getElementById('pbp-save-btn').addEventListener('click', () => savePlayByPlay(true));
   document.getElementById('pbp-pdf-btn').addEventListener('click', () => exportPbpPdf(m, pbpRows));
+  document.getElementById('pbp-publish-btn').addEventListener('click', () => openPublishModal(m));
   document.getElementById('pbp-eval-input').addEventListener('input', (e) => {
     pbpEvaluation = e.target.value;
     scheduleAutosave();
@@ -1211,6 +1213,70 @@ function openFinanceForm(existing) {
       closeModal();
     } catch (err) {
       alert("Erreur lors de l'enregistrement : " + err.message);
+    }
+  });
+}
+
+
+/* ---------------- Publication vers l'espace coaching ---------------- */
+function coachingReady() {
+  return coachingConfig.apiKey && !coachingConfig.apiKey.startsWith('COLLE_') && !String(COACH_EMAIL).includes('exemple.com');
+}
+function getCoachingServices() {
+  const capp = getApps().some(a => a.name === 'coaching') ? getApp('coaching') : initializeApp(coachingConfig, 'coaching');
+  return { cauth: getAuth(capp), cdb: getFirestore(capp) };
+}
+function openPublishModal(m) {
+  if (!coachingReady()) {
+    showToast("L'espace coaching n'est pas encore configuré (voir firebase-config.js)");
+    return;
+  }
+  let saved = '';
+  try { saved = localStorage.getItem('coachingDriveLink') || ''; } catch (e) { /* ignore */ }
+  openModal(`
+    <h3 class="modal-title">Publier au coaching</h3>
+    <p class="modal-sub">${escapeHtml(m.equipeA)} – ${escapeHtml(m.equipeB)} · ${formatDate(m.date)}. Seul le tableau est publié (pas les statistiques ni l'évaluation).</p>
+    <form id="publish-form">
+      <div class="form-field"><label>Titre affiché aux arbitres</label>
+        <input name="title" value="${escapeAttr(m.equipeA + ' – ' + m.equipeB)}" required></div>
+      <div class="form-field"><label>Lien du dossier Google Drive des clips</label>
+        <input name="driveLink" value="${escapeAttr(m.driveLink || saved)}" placeholder="https://drive.google.com/…"></div>
+      <div class="form-field"><label>Ton mot de passe coach (non enregistré)</label>
+        <input type="password" name="pwd" required autocomplete="current-password"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="publish-cancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="publish-submit">Publier</button>
+      </div>
+    </form>`);
+  document.getElementById('publish-cancel').addEventListener('click', closeModal);
+  document.getElementById('publish-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const btn = document.getElementById('publish-submit');
+    btn.disabled = true;
+    try {
+      const driveLink = String(fd.get('driveLink') || '').trim();
+      if (driveLink && !/^https?:\/\//i.test(driveLink)) throw new Error('Le lien Drive doit commencer par http(s)://');
+      const { cauth, cdb } = getCoachingServices();
+      await cauth.authStateReady();
+      await signInWithEmailAndPassword(cauth, COACH_EMAIL, String(fd.get('pwd')));
+      const rows = pbpRows.filter(hasAnyData).map((r, idx) => ({
+        num: idx + 1, clip: r.clip || '', cds: r.cds || '', timing: r.timing || '',
+        bonTiming: r.bonTiming || '', nature: r.nature || '', detail: pbpDetailText(r), iotMeca: r.iotMeca || ''
+      }));
+      await setDoc(doc(cdb, 'debriefs', m.id), {
+        title: String(fd.get('title')).trim(), date: m.date || '', niveau: m.niveau || '',
+        driveLink, rows, publishedAt: serverTimestamp()
+      });
+      await signOut(cauth);
+      try { if (driveLink) localStorage.setItem('coachingDriveLink', driveLink); } catch (err) { /* ignore */ }
+      closeModal();
+      showToast('Debrief publié au coaching ✓');
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      const c = (err && err.code) || '';
+      showToast(c.includes('invalid-credential') || c.includes('wrong-password') ? 'Mot de passe coach incorrect' : 'Publication impossible : ' + (c || err.message));
     }
   });
 }
