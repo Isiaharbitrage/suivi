@@ -1235,7 +1235,7 @@ function openPublishModal(m) {
   try { saved = localStorage.getItem('coachingDriveLink') || ''; } catch (e) { /* ignore */ }
   openModal(`
     <h3 class="modal-title">Publier au coaching</h3>
-    <p class="modal-sub">${escapeHtml(m.equipeA)} – ${escapeHtml(m.equipeB)} · ${formatDate(m.date)}. Seul le tableau est publié (pas les statistiques ni l'évaluation).</p>
+    <p class="modal-sub">${escapeHtml(m.equipeA)} – ${escapeHtml(m.equipeB)} · ${formatDate(m.date)}. Seules les lignes INC, IC, MC et CC liés à une faute sont publiées (pas les statistiques ni l'évaluation).</p>
     <form id="publish-form">
       <div class="form-field"><label>Titre affiché aux arbitres</label>
         <input name="title" value="${escapeAttr(m.equipeA + ' – ' + m.equipeB)}" required></div>
@@ -1260,7 +1260,9 @@ function openPublishModal(m) {
       const { cauth, cdb } = getCoachingServices();
       await cauth.authStateReady();
       await signInWithEmailAndPassword(cauth, COACH_EMAIL, String(fd.get('pwd')));
-      const rows = pbpRows.filter(hasAnyData).map((r, idx) => ({
+      // Seules les lignes utiles au debrief sont publiées : INC, IC, MC et les CC liés à une faute
+      const keep = (r) => r.cds === 'INC' || r.cds === 'IC' || r.cds === 'MC' || (r.cds === 'CC' && r.nature === 'Faute');
+      const rows = pbpRows.map((r, idx) => ({ r, idx })).filter(({ r }) => hasAnyData(r) && keep(r)).map(({ r, idx }) => ({
         num: idx + 1, clip: r.clip || '', cds: r.cds || '', timing: r.timing || '',
         bonTiming: r.bonTiming || '', nature: r.nature || '', detail: pbpDetailText(r), iotMeca: r.iotMeca || ''
       }));
